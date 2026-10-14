@@ -28,5 +28,8 @@ interface VideoStorage
 
     public function storeProcessed(string $localPath, string $storageKey): void;
 
+    /** @return resource */
+    public function readStream(string $key);
+
     public function driver(): string;
 }

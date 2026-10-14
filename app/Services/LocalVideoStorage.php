@@ -113,6 +113,16 @@ class LocalVideoStorage implements VideoStorage
         }
     }
 
+    public function readStream(string $key)
+    {
+        $stream = $this->disk()->readStream($key);
+        if (! is_resource($stream)) {
+            throw new RuntimeException('Video asset cannot be opened.');
+        }
+
+        return $stream;
+    }
+
     public function driver(): string
     {
         return 'local';

@@ -12,6 +12,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\LessonVideoController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\VideoPlaybackController;
 use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -75,6 +76,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('video-uploads/{uploadSession}', [VideoUploadController::class, 'cancel'])->name('video-uploads.cancel');
         Route::post('lessons/{lesson}/videos/{video}/move/{direction}', [LessonVideoController::class, 'move'])->name('videos.move');
         Route::post('lessons/{lesson}/videos/{video}/retry', [LessonVideoController::class, 'retry'])->name('videos.retry');
+        Route::patch('lessons/{lesson}/videos/{video}/publication', [LessonVideoController::class, 'publication'])->name('videos.publication');
+        Route::get('student/courses/{course}/lessons/{lesson}/videos/{video}/stream', [VideoPlaybackController::class, 'student'])->name('student.videos.stream');
+        Route::get('videos/{video}/preview', [VideoPlaybackController::class, 'preview'])->name('videos.preview');
         Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
     });
 });

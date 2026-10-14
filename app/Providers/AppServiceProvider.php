@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\VideoDelivery;
 use App\Contracts\VideoProcessor;
 use App\Contracts\VideoStorage;
 use App\Services\LocalFFmpegVideoProcessor;
+use App\Services\LocalProtectedVideoDelivery;
 use App\Services\LocalVideoStorage;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
 
             return new LocalFFmpegVideoProcessor;
         });
+        $this->app->bind(VideoDelivery::class, LocalProtectedVideoDelivery::class);
     }
 
     /**

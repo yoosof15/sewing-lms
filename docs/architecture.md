@@ -59,4 +59,15 @@
 - حالت processor غیرفعال، آپلود را متوقف نمی‌کند و ویدئو را صادقانه در `STORED` نگه می‌دارد. فرمان `video:dispatch-pending` این موارد را پس از فعال‌شدن processor بازیابی می‌کند.
 - در cPanel سه مسیر تولید معتبر می‌ماند: FFmpeg روی همان host، worker/VPS جداگانه، یا سرویس پردازش خارجی. هیچ daemon دائمی، Redis یا دسترسی root پیش‌فرض نیست.
 
-فاز ۶ مرز `READY → protected playback` را پیاده خواهد کرد. HLS، player، URL امضاشده و دسترسی هنرجو در فاز ۵ وجود ندارند.
+خروجی فاز ۵ در مرز `READY` پایان می‌یابد؛ delivery و دسترسی هنرجو در لایهٔ مستقل فاز ۶ قرار دارند.
+
+## پخش محافظت‌شده و انتشار ویدئو (فاز ۶)
+
+- `VideoStatus` فقط چرخه پردازش را نشان می‌دهد. `VideoPublicationStatus` با مقادیر `DRAFT`، `PUBLISHED` و `INACTIVE` چرخه انتشار را مستقل نگه می‌دارد. مقدار پیش‌فرض همیشه DRAFT است و فقط asset واقعاً READY و موجود قابل انتشار است.
+- `VideoPlaybackAccess` تصمیم واحد authorization است. هنرجو باید نقش STUDENT، ثبت‌نام جاری، Course و Lesson منتشرشده و حذف‌نشده، و Video حذف‌نشده با وضعیت `READY + PUBLISHED` و processed asset موجود داشته باشد. این تصمیم در هر درخواست stream و Range دوباره اجرا می‌شود.
+- صفحه هنرجو فقط descriptorهای امن `id/title/stream_url` را با ترتیب `sort_order` دریافت می‌کند. source key، processed key، مسیر موقت و مسیر فیزیکی هرگز serialize نمی‌شوند. مسیر stream nested بودن Course/Lesson/Video را نیز بررسی می‌کند.
+- `VideoDelivery` مرز انتقال است. `LocalProtectedVideoDelivery` فعلی stream خصوصی و seekable با پاسخ‌های 200/206/416، `Accept-Ranges`، طول و محدوده صحیح، MIME واقعی، inline disposition و cache خصوصی ارائه می‌دهد. خواندن فایل در chunkهای یک‌مگابایتی انجام می‌شود و کل ویدئو وارد حافظه PHP نمی‌شود.
+- Admin و مدرس مالک مجاز می‌توانند processed asset مربوط به READY را بدون نیاز به publication preview کنند. هنرجو از مسیر preview مدیریتی رد می‌شود. نبود asset فقط log و پاسخ کنترل‌شده ایجاد می‌کند و GET وضعیت دامنه را به‌طور پنهانی تغییر نمی‌دهد.
+- source حتی با `VIDEO_KEEP_ORIGINAL=true` خارج از مسیر playback باقی می‌ماند. دکمه دانلود نمایش داده نمی‌شود، ولی کنترل‌های مرورگر DRM نیستند و وعدهٔ جلوگیری قطعی از دانلود/ضبط داده نمی‌شود.
+- PHP streaming فقط adapter توسعه محلی است. adapter آینده می‌تواند پس از authorization یک URL موقت provider/CDN بسازد. قابلیت provider در فاز ۹ بررسی خواهد شد و تا آن زمان signed URL، secure_link یا S3 فرض نمی‌شود.
+- HLS فعلاً به تعویق افتاده چون خروجی موجود یک MP4 بهینه با faststart است و Range برای آزمون پخش محافظت‌شده و seek کافی است. تصمیم HLS پس از شناخت storage تولید و نیاز واقعی adaptive bitrate گرفته می‌شود.

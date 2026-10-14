@@ -11,6 +11,7 @@ const submit = () => editing ? form.put(`/${role}/courses/${props.course.id}/les
 const upload = useForm({ attachment: null });
 const format = (bytes) => bytes == null ? '—' : `${(bytes / 1024 / 1024).toFixed(1)} مگابایت`;
 const statusLabel = (status) => ({ STORED: props.videoConfig?.processingEnabled ? 'در انتظار پردازش' : 'پردازش غیرفعال است', PROCESSING: 'در حال پردازش', READY: 'آماده', FAILED: 'خطا در پردازش', UPLOADING: 'در حال بارگذاری' }[status] || status);
+const publicationLabel = (status) => ({ DRAFT: 'پیش‌نویس', PUBLISHED: 'منتشرشده', INACTIVE: 'غیرفعال' }[status] || status);
 const reduction = (video) => video.processed_size_bytes && video.size_bytes ? Math.max(0, Math.round((1 - video.processed_size_bytes / video.size_bytes) * 100)) : null;
 const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 </script>
@@ -35,7 +36,8 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                     <div v-for="video in lesson.videos" :key="video.id" class="flex flex-wrap justify-between gap-3 rounded-xl bg-slate-50 p-4">
                         <div class="space-y-1">
                             <strong>{{ video.sort_order }}. {{ video.title }}</strong>
-                            <p class="text-sm" :class="video.status === 'FAILED' ? 'text-red-700' : 'text-teal-700'">{{ statusLabel(video.status) }}</p>
+                            <p class="text-sm" :class="video.status === 'FAILED' ? 'text-red-700' : 'text-teal-700'">وضعیت پردازش: {{ statusLabel(video.status) }}</p>
+                            <p class="text-sm text-slate-700">وضعیت انتشار: {{ publicationLabel(video.publication_status) }}</p>
                             <p class="text-xs text-slate-500">{{ video.original_filename }} — حجم اصلی: {{ format(video.size_bytes) }}</p>
                             <div v-if="video.status === 'READY'" class="text-xs text-slate-600">
                                 <span>حجم بهینه: {{ format(video.processed_size_bytes) }}</span>
@@ -47,6 +49,10 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                             <p class="text-xs">بارگذار: {{ video.uploader.first_name }} {{ video.uploader.last_name }}</p>
                         </div>
                         <div class="flex items-center gap-3">
+                            <a v-if="video.status === 'READY'" :href="`/videos/${video.id}/preview`" target="_blank" class="rounded-lg border px-3 py-1">پیش‌نمایش</a>
+                            <Link v-if="video.status === 'READY' && video.publication_status !== 'PUBLISHED'" :href="`/lessons/${lesson.id}/videos/${video.id}/publication`" method="patch" :data="{ publication_status: 'PUBLISHED' }" as="button" class="rounded-lg border border-teal-700 px-3 py-1 text-teal-800">انتشار</Link>
+                            <Link v-if="video.publication_status === 'PUBLISHED'" :href="`/lessons/${lesson.id}/videos/${video.id}/publication`" method="patch" :data="{ publication_status: 'INACTIVE' }" as="button" class="rounded-lg border px-3 py-1">غیرفعال‌سازی</Link>
+                            <Link v-if="video.publication_status === 'INACTIVE'" :href="`/lessons/${lesson.id}/videos/${video.id}/publication`" method="patch" :data="{ publication_status: 'DRAFT' }" as="button" class="rounded-lg border px-3 py-1">پیش‌نویس</Link>
                             <Link v-if="video.status === 'FAILED' && video.processing_attempts < videoConfig.maxAttempts && videoConfig.processingEnabled" :href="`/lessons/${lesson.id}/videos/${video.id}/retry`" method="post" as="button" class="rounded-lg border border-teal-700 px-3 py-1 text-teal-800">تلاش مجدد</Link>
                             <Link :href="`/lessons/${lesson.id}/videos/${video.id}/move/up`" method="post" as="button">↑</Link>
                             <Link :href="`/lessons/${lesson.id}/videos/${video.id}/move/down`" method="post" as="button">↓</Link>

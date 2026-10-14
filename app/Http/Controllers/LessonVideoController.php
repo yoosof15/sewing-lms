@@ -2,15 +2,38 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\VideoStorage;
+use App\Enums\VideoPublicationStatus;
 use App\Enums\VideoStatus;
 use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class LessonVideoController extends Controller
 {
+    public function publication(Request $request, Lesson $lesson, LessonVideo $video, VideoStorage $storage): RedirectResponse
+    {
+        $this->bound($lesson, $video);
+        $this->authorize('update', $video);
+        $data = $request->validate(['publication_status' => ['required', Rule::enum(VideoPublicationStatus::class)]]);
+        $status = VideoPublicationStatus::from($data['publication_status']);
+        if ($status === VideoPublicationStatus::Published) {
+            abort_unless($video->status === VideoStatus::Ready, 422, 'Only READY videos can be published.');
+            abort_unless($video->processed_storage_key && $storage->exists($video->processed_storage_key), 422, 'Processed video asset is unavailable.');
+            abort_unless($video->lesson && $video->lesson->course, 422, 'Video parents are unavailable.');
+        }
+        $video->update([
+            'publication_status' => $status,
+            'published_at' => $status === VideoPublicationStatus::Published ? ($video->published_at ?? now()) : null,
+        ]);
+
+        return back()->with('success', 'وضعیت انتشار ویدئو به‌روزرسانی شد.');
+    }
+
     public function retry(Lesson $lesson, LessonVideo $video): RedirectResponse
     {
         $this->bound($lesson, $video);

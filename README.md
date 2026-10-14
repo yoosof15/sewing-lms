@@ -99,6 +99,30 @@ php artisan video:dispatch-pending --limit=100
 
 در cPanel، اگر FFmpeg موجود باشد Cron می‌تواند worker کوتاه‌عمر اجرا کند، برای نمونه `php artisan queue:work --stop-when-empty --tries=1 --timeout=7200`. اگر FFmpeg وجود ندارد، پردازشگر پشت قرارداد `VideoProcessor` باید در آینده با worker/VPS جداگانه یا سرویس خارجی جایگزین شود. اجرای FFmpeg طولانی در درخواست وب توصیه نمی‌شود.
 
+## پخش محافظت‌شده ویدئو (فاز ۶)
+
+وضعیت پردازش و انتشار مستقل‌اند. ویدئوی جدید حتی پس از `READY` شدن، به‌صورت `DRAFT` باقی می‌ماند تا مدیر یا مدرس مجاز آن را منتشر کند. هنرجو فقط ویدئوی `READY + PUBLISHED` را در درس منتشرشدهٔ یک دورهٔ منتشرشده و با ثبت‌نام فعال می‌بیند.
+
+فایل source هرگز از مسیر پخش ارائه نمی‌شود. مرورگر فقط endpoint برنامه را می‌بیند و هر درخواست کامل یا Range دوباره در سرور authorize می‌شود. مسیر فیزیکی، storage key و URL مستقیم asset به Vue داده نمی‌شود. `controlsList="nodownload"` و جلوگیری از context menu فقط بازدارندهٔ UX هستند و امکان دانلود یا ضبط مرورگر را به‌طور مطلق حذف نمی‌کنند.
+
+آزمایش دستی امنیت:
+
+1. با هنرجوی ثبت‌نام‌شده وارد دوره و درس منتشرشده شوید و ویدئوی منتشرشده را پخش کنید.
+2. URL درخواست stream را از Network کپی و در Incognito باز کنید؛ باید ورود درخواست شود.
+3. همان URL را با هنرجوی فاقد ثبت‌نام باز کنید؛ باید رد شود.
+4. ثبت‌نام هنرجوی اول را غیرفعال و دوباره seek کنید؛ درخواست Range بعدی باید رد شود.
+5. در URL و source صفحه نباید `storage/app`، `video_local` یا storage key دیده شود.
+
+برای آزمایش Range با یک session احراز‌شده، در DevTools درخواست stream را به‌صورت PowerShell/curl کپی و header زیر را اضافه کنید:
+
+```powershell
+curl.exe -i -H "Range: bytes=0-1023" -b "laravel_session=SESSION_VALUE" "http://127.0.0.1:8000/student/courses/COURSE/lessons/LESSON/videos/VIDEO/stream"
+```
+
+پاسخ باید `206 Partial Content`، مقدار `Accept-Ranges: bytes`، طول `1024` و `Content-Range: bytes 0-1023/TOTAL` داشته باشد. پخش محلی از PHP برای توسعه و آزمون کنترل‌شده مناسب است، نه انتقال چندگیگابایتی production. در تولید، برنامه باید authorization را انجام دهد و delivery از storage/CDN با دسترسی موقت صورت گیرد.
+
+در تست موبایل روی LAN، پخش، pause، seek جلو/عقب، fullscreen، چرخش portrait/landscape و audio sync را بررسی کنید. HLS در این فاز عمداً اضافه نشده است؛ MP4 progressive و HTTP Range برای تثبیت authorization، UX و مرز delivery کافی است.
+
 سیاست تاریخ/زمان، ذخیره ویدئو و محدودیت‌های cPanel در [docs/architecture.md](docs/architecture.md) ثبت شده است.
 
 ## داده نمایشی فاز ۲
