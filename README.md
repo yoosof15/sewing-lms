@@ -1,59 +1,44 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sewing LMS
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+سامانه یکپارچه Laravel 12 + Inertia 2 + Vue 3 برای آموزشگاه خیاطی، با رابط فارسی و راست‌به‌چپ.
 
-## About Laravel
+## نیازمندی‌ها و راه‌اندازی محلی
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.2+ با `pdo_mysql`
+- Composer 2، MySQL، Node.js 22 و npm 10
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```powershell
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+# اتصال MySQL را در .env تنظیم کنید
+php artisan migrate
+npm.cmd install
+npm.cmd run dev
+php artisan serve
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+در Windows PowerShell ممکن است `npm.ps1` مسدود باشد؛ بدون تغییر Execution Policy از `npm.cmd` استفاده کنید. برای build تولید: `npm.cmd run build`.
 
-## Learning Laravel
+## مدیر محلی اولیه
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+مقادیر `LOCAL_ADMIN_FIRST_NAME`، `LOCAL_ADMIN_LAST_NAME`، `LOCAL_ADMIN_MOBILE`، `LOCAL_ADMIN_EMAIL` و `LOCAL_ADMIN_PASSWORD` را فقط در `.env` محلی قرار دهید، سپس اجرا کنید:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```powershell
+php artisan db:seed --class=RoleSeeder
+php artisan db:seed --class=LocalAdminSeeder
+```
 
-## Laravel Sponsors
+Seeder دوم فقط در محیط `local` اجرا می‌شود و رمز حساب موجود را بازنویسی نمی‌کند. در تولید، `RoleSeeder` را پس از migration اجرا و اولین مدیر را با یک رویه عملیاتی امن و اعتبارنامه منحصربه‌فرد ایجاد کنید؛ LocalAdminSeeder برای تولید نیست.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## نقش‌ها و ورود
 
-### Premium Partners
+فقط نقش‌های `ADMIN`، `TEACHER` و `STUDENT` وجود دارند. ثبت‌نام عمومی وجود ندارد. ورود با ایمیل یا موبایل ممکن است. موبایل با قالب canonical `+989XXXXXXXXX` ذخیره می‌شود؛ در نتیجه `0912...`، `98912...` و `+98912...` معادل‌اند.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## آزمون
 
-## Contributing
+```powershell
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+سیاست تاریخ/زمان، ذخیره ویدئو و محدودیت‌های cPanel در [docs/architecture.md](docs/architecture.md) ثبت شده است.

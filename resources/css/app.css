@@ -6,6 +6,7 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: Tahoma, Arial, ui-sans-serif, system-ui, sans-serif;
 }
+
+@layer base { body { @apply bg-stone-50 text-slate-800 antialiased; } input, select { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100; } label { @apply mb-1 block text-sm font-medium; } button, a { @apply transition; } }

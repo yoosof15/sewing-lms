@@ -1,0 +1,2 @@
+<script setup>import { Head,usePage } from '@inertiajs/vue3'; import AppLayout from '../Layouts/AppLayout.vue'; defineProps({title:String}); const user=usePage().props.auth.user;</script>
+<template><AppLayout><Head :title="title"/><section class="rounded-2xl border bg-white p-6"><h1 class="text-2xl font-bold">{{ title }}</h1><p class="mt-3 text-slate-600">{{ user.name }}، خوش آمدید.</p><p class="mt-6 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">امکانات آموزشی در فازهای بعدی افزوده خواهد شد.</p></section></AppLayout></template>
