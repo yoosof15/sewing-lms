@@ -71,3 +71,13 @@
 - source حتی با `VIDEO_KEEP_ORIGINAL=true` خارج از مسیر playback باقی می‌ماند. دکمه دانلود نمایش داده نمی‌شود، ولی کنترل‌های مرورگر DRM نیستند و وعدهٔ جلوگیری قطعی از دانلود/ضبط داده نمی‌شود.
 - PHP streaming فقط adapter توسعه محلی است. adapter آینده می‌تواند پس از authorization یک URL موقت provider/CDN بسازد. قابلیت provider در فاز ۹ بررسی خواهد شد و تا آن زمان signed URL، secure_link یا S3 فرض نمی‌شود.
 - HLS فعلاً به تعویق افتاده چون خروجی موجود یک MP4 بهینه با faststart است و Range برای آزمون پخش محافظت‌شده و seek کافی است. تصمیم HLS پس از شناخت storage تولید و نیاز واقعی adaptive bitrate گرفته می‌شود.
+
+## پیشرفت، واترمارک و نشست فعال (فاز ۷)
+
+- جدول `video_progress` حقیقت پیشرفت شخصی ویدئو را با کلید یکتای user/video نگه می‌دارد. position و watched seconds عدد صحیح‌اند و duration معتبر سرور مرجع است. update با row lock انجام می‌شود، `completed_at` برگشت‌ناپذیر است و heartbeatهای دیررس آن را پاک نمی‌کنند.
+- heartbeat مرورگر watched time را تعیین نمی‌کند. اعتبار هر درخواست حداکثر فاصلهٔ position رو به جلو و سقف زمان دیواری × نرخ مجاز به‌علاوه تلورانس است. نخستین heartbeat اعتبار نمی‌دهد؛ پرش به انتها تکمیل ایجاد نمی‌کند. position بزرگ‌تر از duration clamp و مقدار منفی رد می‌شود.
+- completion threshold ویژگی Course با بازه ۱ تا ۱۰۰ است. Video completion از watched/duration، Lesson completion از همه ویدئوهای لازم فعلی، و Course progress از درس‌های PUBLISHED فعلی مشتق می‌شود. فقط تکمیل دستی درس بدون ویدئوی لازم در `lesson_manual_completions` ذخیره می‌شود؛ این رکورد اگر بعداً ویدئو منتشر شود قوانین جدید را دور نمی‌زند.
+- resume فقط از progress همان هنرجو می‌آید. ویدئوی کامل که در انتها متوقف شده برای rewatch از صفر شروع می‌شود. Dashboard و Course page درصد و state واقعی را نمایش می‌دهند.
+- واترمارک server-authored شامل نام و موبایل ماسک‌شده است و با CSS/Vue جابه‌جا می‌شود؛ ورودی هویتی از client پذیرفته نمی‌شود. overlay سبک است، داخل فایل encode نمی‌شود و DRM محسوب نمی‌شود. fullscreen بومی برخی platformها ممکن است overlay را حذف کند.
+- حفاظت هم‌زمانی در سطح «نشست فعال Laravel» است، نه fingerprint سخت‌افزار. جدول موجود `sessions` با lifetime خود Laravel مرجع است. login بیش از حد رد می‌شود، ردیف منقضی شمرده نمی‌شود، نشست جاری از حذف تصادفی محافظت می‌شود و حذف ردیف نشست درخواست محافظت‌شده بعدی را unauthenticated می‌کند.
+- token مدیریت نشست HMAC یک‌طرفه از session id است. UI نه id خام، نه payload و نه IP کامل را دریافت می‌کند. کاربر فقط نشست خودش و Admin نشست کاربران را مدیریت می‌کند؛ همه endpointها ownership/role را دوباره بررسی می‌کنند.

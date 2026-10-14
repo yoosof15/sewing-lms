@@ -123,6 +123,29 @@ curl.exe -i -H "Range: bytes=0-1023" -b "laravel_session=SESSION_VALUE" "http://
 
 در تست موبایل روی LAN، پخش، pause، seek جلو/عقب، fullscreen، چرخش portrait/landscape و audio sync را بررسی کنید. HLS در این فاز عمداً اضافه نشده است؛ MP4 progressive و HTTP Range برای تثبیت authorization، UX و مرز delivery کافی است.
 
+## پیشرفت یادگیری، واترمارک و نشست‌ها (فاز ۷)
+
+`VideoProgress` برای هر هنرجو/ویدئو یک ردیف یکتا نگه می‌دارد. Player هنگام شروع و تقریباً هر ۱۲ ثانیه در زمان پخش، همچنین در pause، ended، seek و خروج از صفحه position را گزارش می‌کند. سرور به‌جای اعتماد به زمان ادعایی مرورگر، اعتبار مشاهده را از کمینهٔ حرکت رو به جلو و زمان سپری‌شده با سقف ۲× و سه ثانیه تلورانس محاسبه می‌کند. seek جلو position را تغییر می‌دهد ولی فاصلهٔ پرش را مشاهده‌شده حساب نمی‌کند؛ seek عقب نیز watched time را کم نمی‌کند.
+
+حد تکمیل در هر Course با `completion_threshold_percent` و پیش‌فرض ۸۰٪ تنظیم می‌شود. تکمیل ویدئو فقط از `watched_seconds / duration_seconds` محاسبه می‌شود. درس دارای ویدئوی لازم زمانی کامل است که همه ویدئوهای `READY + PUBLISHED` آن کامل باشند. درس بدون ویدئوی لازم را هنرجو دستی کامل می‌کند. درصد دوره به‌شکل پویا از درس‌های PUBLISHED محاسبه می‌شود، بنابراین تغییر curriculum نتیجه را خودکار اصلاح می‌کند.
+
+متغیرهای مرتبط:
+
+```dotenv
+VIDEO_PROGRESS_HEARTBEAT_SECONDS=12
+VIDEO_PROGRESS_MAX_RATE=2
+VIDEO_PROGRESS_CREDIT_TOLERANCE_SECONDS=3
+VIDEO_WATERMARK_ENABLED=true
+VIDEO_WATERMARK_MOVE_SECONDS=30
+AUTH_MAX_ACTIVE_SESSIONS=2
+```
+
+واترمارک overlay شامل نام هنرجو و موبایل ماسک‌شده است و میان پنج موقعیت حرکت می‌کند. این قابلیت فقط بازدارندهٔ اشتراک‌گذاری ساده است، DRM نیست. در برخی مرورگرها fullscreen بومی خود عنصر `<video>` می‌تواند overlay بیرونی را پنهان کند؛ جلوگیری قطعی از ضبط یا screenshot ممکن نیست.
+
+محدودیت login از جدول database session موجود و `SESSION_LIFETIME` استفاده می‌کند. مقدار صفر برای `AUTH_MAX_ACTIVE_SESSIONS` یعنی نامحدود؛ در حد ظرفیت، login جدید با پیام فارسی رد می‌شود. صفحه «نشست‌های فعال» browser/OS تقریبی، IP ماسک‌شده و آخرین فعالیت را نشان می‌دهد. کاربر نشست دیگر خودش را لغو می‌کند ولی نشست جاری محافظت شده است. مدیر از فهرست کاربران به نشست‌های هر کاربر دسترسی دارد. شناسه خام و payload نشست هرگز serialize نمی‌شوند.
+
+تست دستی پیشنهادی: ۳۰ تا ۶۰ ثانیه ویدئو را ببینید، pause و refresh کنید و resume را بررسی کنید؛ سپس seek بزرگی انجام دهید و مطمئن شوید درصد ناگهان کامل نمی‌شود. برای نشست‌ها با حد ۲ در مرورگر A و B وارد شوید، ورود C باید رد شود؛ B را از A لغو کنید و ورود C را دوباره امتحان کنید.
+
 سیاست تاریخ/زمان، ذخیره ویدئو و محدودیت‌های cPanel در [docs/architecture.md](docs/architecture.md) ثبت شده است.
 
 ## داده نمایشی فاز ۲

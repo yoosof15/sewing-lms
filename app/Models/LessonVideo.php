@@ -6,6 +6,7 @@ use App\Enums\VideoPublicationStatus;
 use App\Enums\VideoStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LessonVideo extends Model
@@ -29,5 +30,10 @@ class LessonVideo extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function progress(): HasMany
+    {
+        return $this->hasMany(VideoProgress::class);
     }
 }

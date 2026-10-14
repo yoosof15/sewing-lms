@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActiveSessionController;
 use App\Http\Controllers\Admin\CourseCategoryController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\EnrollmentController;
@@ -8,11 +9,13 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\LessonAttachmentController;
+use App\Http\Controllers\LessonCompletionController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\LessonVideoController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use App\Http\Controllers\VideoPlaybackController;
+use App\Http\Controllers\VideoProgressController;
 use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -79,6 +82,14 @@ Route::middleware('auth')->group(function () {
         Route::patch('lessons/{lesson}/videos/{video}/publication', [LessonVideoController::class, 'publication'])->name('videos.publication');
         Route::get('student/courses/{course}/lessons/{lesson}/videos/{video}/stream', [VideoPlaybackController::class, 'student'])->name('student.videos.stream');
         Route::get('videos/{video}/preview', [VideoPlaybackController::class, 'preview'])->name('videos.preview');
+        Route::post('student/courses/{course}/lessons/{lesson}/videos/{video}/progress', [VideoProgressController::class, 'update'])->name('student.videos.progress');
+        Route::post('student/courses/{course}/lessons/{lesson}/complete', [LessonCompletionController::class, 'store'])->name('student.lessons.complete');
+        Route::get('account/sessions', [ActiveSessionController::class, 'index'])->name('sessions.index');
+        Route::delete('account/sessions/{token}', [ActiveSessionController::class, 'destroy'])->name('sessions.destroy');
+        Route::middleware('role:ADMIN')->group(function () {
+            Route::get('admin/users/{user}/sessions', [ActiveSessionController::class, 'adminIndex'])->name('admin.users.sessions');
+            Route::delete('admin/users/{user}/sessions/{token}', [ActiveSessionController::class, 'adminDestroy'])->name('admin.users.sessions.destroy');
+        });
         Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
     });
 });

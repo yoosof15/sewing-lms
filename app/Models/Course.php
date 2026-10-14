@@ -15,11 +15,11 @@ class Course extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'short_description', 'description', 'cover_image', 'status', 'published_at'];
+    protected $fillable = ['category_id', 'title', 'short_description', 'description', 'cover_image', 'status', 'published_at', 'completion_threshold_percent'];
 
     protected function casts(): array
     {
-        return ['status' => CourseStatus::class, 'published_at' => 'datetime'];
+        return ['status' => CourseStatus::class, 'published_at' => 'datetime', 'completion_threshold_percent' => 'integer'];
     }
 
     protected static function booted(): void

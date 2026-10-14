@@ -29,6 +29,7 @@ class StoreCourseRequest extends FormRequest
             'short_description' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string', 'max:30000'],
             'status' => ['required', Rule::enum(CourseStatus::class)],
+            'completion_threshold_percent' => ['sometimes', 'integer', 'between:1,100'],
             'teacher_ids' => ['array'],
             'teacher_ids.*' => ['integer', 'distinct', function (string $attribute, mixed $value, \Closure $fail) {
                 if (! User::query()->whereKey($value)->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'TEACHER'))->exists()) {

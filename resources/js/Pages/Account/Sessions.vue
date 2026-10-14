@@ -1,0 +1,6 @@
+<script setup>
+import { Head, Link } from '@inertiajs/vue3';
+import AppLayout from '../../Layouts/AppLayout.vue';
+defineProps({ sessions: Array, subject: Object });
+</script>
+<template><AppLayout><Head title="نشست‌های فعال"/><section class="rounded-2xl border bg-white p-5"><h1 class="text-xl font-bold">نشست‌های فعال<span v-if="subject"> — {{ subject.name }}</span></h1><p class="mt-2 text-sm text-slate-500">فقط نشست‌های منقضی‌نشده نمایش داده می‌شوند. شناسه و محتوای session قابل مشاهده نیست.</p><div class="mt-5 space-y-3"><div v-for="item in sessions" :key="item.token" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"><div><strong>{{ item.device }}</strong><p class="text-sm text-slate-500">IP: {{ item.ip }} — آخرین فعالیت: {{ new Date(item.last_activity).toLocaleString('fa-IR') }}</p><span v-if="item.current" class="text-xs text-teal-700">نشست فعلی</span></div><Link v-if="!item.current" :href="subject?`/admin/users/${subject.id}/sessions/${item.token}`:`/account/sessions/${item.token}`" method="delete" as="button" class="rounded-lg border border-red-600 px-3 py-2 text-red-700">لغو نشست</Link></div><p v-if="!sessions.length">نشست فعالی وجود ندارد.</p></div></section></AppLayout></template>

@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LessonManualCompletion extends Model
+{
+    protected $fillable = ['user_id', 'lesson_id', 'completed_at'];
+
+    protected function casts(): array
+    {
+        return ['completed_at' => 'datetime'];
+    }
+}

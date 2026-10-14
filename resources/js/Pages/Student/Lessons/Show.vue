@@ -1,29 +1,9 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '../../../Layouts/AppLayout.vue';
 import VideoPlayer from '../../../Components/VideoPlayer.vue';
 
-defineProps({ course: Object, lesson: Object, videos: Array });
+const props = defineProps({ course: Object, lesson: Object, videos: Array, lessonProgress: Object, watermark: Object, progressConfig: Object });
+const progressUpdate = (video, data) => { video.progress_percent = data.percent; video.completed = data.completed; if (data.lesson?.completed) props.lessonProgress.completed = true; };
 </script>
-
-<template>
-    <AppLayout>
-        <Head :title="lesson.title" />
-        <article class="rounded-2xl border bg-white p-4 sm:p-6">
-            <Link :href="`/student/courses/${course.id}`" class="text-sm text-teal-700">بازگشت به دوره</Link>
-            <h1 class="mt-5 text-2xl font-bold">{{ lesson.title }}</h1>
-            <div class="mt-6 min-h-36 whitespace-pre-line leading-8 text-slate-700">{{ lesson.content }}</div>
-            <section v-if="videos.length" class="mt-8 space-y-6 border-t pt-5" aria-labelledby="lesson-videos-heading">
-                <h2 id="lesson-videos-heading" class="font-bold">ویدئوهای درس</h2>
-                <article v-for="video in videos" :key="video.id" class="space-y-3">
-                    <h3 class="font-semibold">{{ video.title }}</h3>
-                    <VideoPlayer :src="video.stream_url" :title="video.title" />
-                </article>
-            </section>
-            <section v-if="lesson.attachments.length" class="mt-8 border-t pt-5">
-                <h2 class="mb-3 font-bold">فایل‌های درس</h2>
-                <a v-for="file in lesson.attachments" :key="file.id" :href="`/attachments/${file.id}/download`" class="mb-2 block rounded-xl bg-slate-50 p-3 text-teal-700">{{ file.original_name }}</a>
-            </section>
-        </article>
-    </AppLayout>
-</template>
+<template><AppLayout><Head :title="lesson.title"/><article class="rounded-2xl border bg-white p-4 sm:p-6"><Link :href="`/student/courses/${course.id}`" class="text-sm text-teal-700">بازگشت به دوره</Link><h1 class="mt-5 text-2xl font-bold">{{ lesson.title }}</h1><div class="mt-6 min-h-36 whitespace-pre-line leading-8 text-slate-700">{{ lesson.content }}</div><section v-if="videos.length" class="mt-8 space-y-6 border-t pt-5"><h2 class="font-bold">ویدئوهای درس</h2><article v-for="video in videos" :key="video.id" class="space-y-3"><div class="flex flex-wrap justify-between"><h3 class="font-semibold">{{ video.title }}</h3><span class="text-sm text-teal-700">{{ video.completed ? 'تکمیل‌شده' : `مشاهده‌شده: ${video.progress_percent}٪` }}</span></div><p v-if="video.resume_position>0 && !video.completed" class="text-xs text-slate-500">ادامه از {{ Math.floor(video.resume_position/60) }}:{{ String(video.resume_position%60).padStart(2,'0') }}</p><VideoPlayer :src="video.stream_url" :title="video.title" :progress-url="video.progress_url" :resume-position="video.resume_position" :watermark="watermark" :heartbeat-seconds="progressConfig.heartbeat_seconds" @progress="progressUpdate(video,$event)"/></article></section><button v-if="lessonProgress.manual_allowed && !lessonProgress.completed" class="mt-8 rounded-xl bg-teal-700 px-4 py-2 text-white" @click="router.post(`/student/courses/${course.id}/lessons/${lesson.id}/complete`)">علامت‌گذاری درس به‌عنوان تکمیل‌شده</button><p v-if="lessonProgress.completed" class="mt-6 text-sm font-bold text-emerald-700">درس تکمیل شده است.</p><section v-if="lesson.attachments.length" class="mt-8 border-t pt-5"><h2 class="mb-3 font-bold">فایل‌های درس</h2><a v-for="file in lesson.attachments" :key="file.id" :href="`/attachments/${file.id}/download`" class="mb-2 block rounded-xl bg-slate-50 p-3 text-teal-700">{{ file.original_name }}</a></section></article></AppLayout></template>
