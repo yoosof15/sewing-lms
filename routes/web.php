@@ -16,6 +16,7 @@ use App\Http\Controllers\CourseSectionController;
 use App\Http\Controllers\LessonAttachmentController;
 use App\Http\Controllers\LessonCompletionController;
 use App\Http\Controllers\LessonController;
+use App\Http\Controllers\LessonQuestionController;
 use App\Http\Controllers\LessonVideoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
@@ -76,6 +77,7 @@ Route::middleware('auth')->group(function () {
             Route::post('courses/{course}/sections/{section}/move/{direction}', [CourseSectionController::class, 'move'])->name('sections.move');
             Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
             Route::post('courses/{course}/sections/{section}/restore', [CourseSectionController::class, 'restore'])->name('sections.restore');
+            Route::get('questions', [LessonQuestionController::class, 'index'])->name('questions.index');
         });
         Route::prefix('teacher')->name('teacher.')->middleware('role:TEACHER')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدرس']))->name('dashboard');
@@ -90,6 +92,7 @@ Route::middleware('auth')->group(function () {
             Route::put('courses/{course}/sections/{section}', [CourseSectionController::class, 'update'])->name('sections.update');
             Route::post('courses/{course}/sections/{section}/move/{direction}', [CourseSectionController::class, 'move'])->name('sections.move');
             Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
+            Route::get('questions', [LessonQuestionController::class, 'index'])->name('questions.index');
         });
         Route::prefix('student')->name('student.')->middleware('role:STUDENT')->group(function () {
             Route::get('/', [StudentCourseController::class, 'index'])->name('dashboard');
@@ -119,6 +122,12 @@ Route::middleware('auth')->group(function () {
             Route::delete('admin/users/{user}/sessions/{token}', [ActiveSessionController::class, 'adminDestroy'])->name('admin.users.sessions.destroy');
         });
         Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
+        Route::post('student/courses/{course}/lessons/{lesson}/questions', [LessonQuestionController::class, 'store'])->middleware('throttle:10,1')->name('questions.store');
+        Route::get('questions/{question}', [LessonQuestionController::class, 'show'])->name('questions.show');
+        Route::post('questions/{question}/replies', [LessonQuestionController::class, 'reply'])->middleware('throttle:20,1')->name('questions.replies.store');
+        Route::patch('questions/{question}/status', [LessonQuestionController::class, 'status'])->name('questions.status');
+        Route::delete('questions/{question}', [LessonQuestionController::class, 'destroy'])->middleware('role:ADMIN')->name('questions.destroy');
+        Route::get('question-attachments/{attachment}', [LessonQuestionController::class, 'download'])->name('questions.attachments.download');
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');

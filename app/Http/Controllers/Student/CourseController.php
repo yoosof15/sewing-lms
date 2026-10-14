@@ -51,6 +51,7 @@ class CourseController extends Controller
         abort_unless($lesson->course_id === $course->id, 404);
         $this->authorize('view', $lesson);
         $lesson->load('attachments');
+        $lesson->setRelation('questions', $lesson->questions()->where('student_id', request()->user()->id)->latest('last_activity_at')->limit(20)->get());
         $visibleVideos = $lesson->videos()
             ->where('status', VideoStatus::Ready->value)
             ->where('publication_status', VideoPublicationStatus::Published->value)

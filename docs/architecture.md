@@ -102,3 +102,7 @@ Student access flows through `StudentCourseAccess -> StudentLessonAccess -> sche
 ## Internal notification flow
 
 Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Laravel `Notification` -> database channel. Course recipients are processed in chunks and every recipient/event pair has a deterministic UUID, making queue and cron retries idempotent. A future channel layer may fan the same event out to database + email + SMS + push without placing provider logic in controllers.
+
+## Private lesson Q&A
+
+`Student -> StudentLessonAccess -> LessonQuestion -> linear LessonQuestionReply -> NotificationEvents -> Teacher/Student notification`. Threads belong to one student and remain private. Assigned course teachers may answer regardless of lesson ownership; an unassigned teacher and other students cannot view the thread. Images use private local storage and an authorized download endpoint.

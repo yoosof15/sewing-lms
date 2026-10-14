@@ -12,6 +12,12 @@ Laravel database notifications provide a private, paginated read/unread center f
 
 Run `php artisan notifications:dispatch-due` from cPanel cron every minute to enqueue releases for due scheduled lessons, and run a short-lived database queue worker separately. The scheduler also registers this command every minute. Future mail/SMS/push channels can consume the same domain notification events without changing course or lesson business rules.
 
+## Private Lesson Q&A (Phase 11)
+
+Each accessible lesson supports private student threads with linear, immutable replies. States are `OPEN`, `ANSWERED`, `RESOLVED`, and `CLOSED`. Assigned teachers can support every lesson in their course regardless of lesson authorship; admins oversee all threads. A staff reply changes `OPEN` to `ANSWERED`; a student follow-up changes `RESOLVED` back to `ANSWERED`; `CLOSED` rejects replies.
+
+Q&A reuses internal `LESSON_QA` notifications. Creation and replies are limited to 10/minute and 20/minute. Up to three private JPG/PNG/WebP images of 5 MB each may accompany a question or reply; downloads always pass Q&A authorization. Q&A is not a public forum or realtime chat.
+
 سامانه یکپارچه Laravel 12 + Inertia 2 + Vue 3 برای آموزشگاه خیاطی، با رابط فارسی و راست‌به‌چپ.
 
 ## نیازمندی‌ها و راه‌اندازی محلی

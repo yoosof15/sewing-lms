@@ -69,4 +69,9 @@ class Lesson extends Model
     {
         return $this->hasMany(LessonVideo::class)->orderBy('sort_order');
     }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(LessonQuestion::class);
+    }
 }

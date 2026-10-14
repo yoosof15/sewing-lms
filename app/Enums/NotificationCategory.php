@@ -8,6 +8,7 @@ enum NotificationCategory: string
     case NewLesson = 'NEW_LESSON';
     case NewVideo = 'NEW_VIDEO';
     case TeacherAssignment = 'TEACHER_ASSIGNMENT';
+    case LessonQa = 'LESSON_QA';
 
     public function mandatory(): bool
     {
@@ -17,7 +18,7 @@ enum NotificationCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::CourseAccess => 'دسترسی دوره', self::NewLesson => 'درس جدید', self::NewVideo => 'ویدیوی جدید', self::TeacherAssignment => 'تخصیص تدریس'
+            self::CourseAccess => 'دسترسی دوره', self::NewLesson => 'درس جدید', self::NewVideo => 'ویدیوی جدید', self::TeacherAssignment => 'تخصیص تدریس', self::LessonQa => 'پرسش و پاسخ'
         };
     }
 }
