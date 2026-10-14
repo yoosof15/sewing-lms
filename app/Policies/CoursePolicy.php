@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Course;
 use App\Models\User;
+use App\Services\StudentCourseAccess;
 
 class CoursePolicy
 {
@@ -19,7 +20,11 @@ class CoursePolicy
 
     public function view(User $user, Course $course): bool
     {
-        return $user->hasRole('TEACHER') && $course->teachers()->whereKey($user->id)->exists();
+        if ($user->hasRole('TEACHER')) {
+            return $course->teachers()->whereKey($user->id)->exists();
+        }
+
+        return $user->hasRole('STUDENT') && app(StudentCourseAccess::class)->allows($user, $course);
     }
 
     public function create(User $user): bool

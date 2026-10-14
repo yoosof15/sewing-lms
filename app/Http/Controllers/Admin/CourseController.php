@@ -103,6 +103,6 @@ class CourseController extends Controller
 
     private function courseData(Course $course): Course
     {
-        return $course->load(['category:id,name', 'teachers:id,first_name,last_name']);
+        return $course->load(['category:id,name', 'teachers:id,first_name,last_name', 'lessons.creator:id,first_name,last_name']);
     }
 }
