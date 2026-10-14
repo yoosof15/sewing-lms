@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -26,14 +27,17 @@ class UserController extends Controller
         return Inertia::render('Admin/Users/Form', ['managedUser' => null]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, AuditService $audit): RedirectResponse
     {
-        DB::transaction(function () use ($request) {
+        $user = DB::transaction(function () use ($request) {
             $role = $request->validated('role');
             $data = $request->safe()->except(['role', 'password_confirmation']);
             $user = User::create($data);
             $user->assignRole($role);
+
+            return $user;
         });
+        $audit->record('user.created', $user, ['role' => $user->getRoleNames()->first(), 'active' => $user->is_active]);
 
         return redirect()->route('admin.users.index')->with('success', 'کاربر با موفقیت ایجاد شد.');
     }
@@ -43,11 +47,14 @@ class UserController extends Controller
         return Inertia::render('Admin/Users/Form', ['managedUser' => ['id' => $user->id, 'first_name' => $user->first_name, 'last_name' => $user->last_name, 'mobile' => $user->mobile, 'email' => $user->email, 'is_active' => $user->is_active, 'role' => $user->getRoleNames()->first()]]);
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user, AuditService $audit): RedirectResponse
     {
         if ($user->hasRole('ADMIN') && ! $request->boolean('is_active') && User::role('ADMIN')->where('is_active', true)->count() <= 1) {
             return back()->withErrors(['is_active' => 'آخرین مدیر فعال را نمی‌توان غیرفعال کرد.']);
         }
+        $beforeRole = $user->getRoleNames()->first();
+        $beforeActive = $user->is_active;
+        $passwordChanged = filled($request->validated('password'));
         DB::transaction(function () use ($request, $user) {
             $role = $request->validated('role');
             $data = $request->safe()->except(['role', 'password_confirmation']);
@@ -58,6 +65,18 @@ class UserController extends Controller
                 $user->syncRoles([$role]);
             }
         });
+        $user->refresh();
+        $afterRole = $user->getRoleNames()->first();
+        $audit->record('user.updated', $user, ['changed_fields' => array_values(array_diff(array_keys($user->getChanges()), ['password']))]);
+        if ($beforeRole !== $afterRole) {
+            $audit->record('user.role_changed', $user, ['from' => $beforeRole, 'to' => $afterRole]);
+        }
+        if ($beforeActive !== $user->is_active) {
+            $audit->record($user->is_active ? 'user.activated' : 'user.deactivated', $user);
+        }
+        if ($passwordChanged) {
+            $audit->record('user.password_changed_by_admin', $user);
+        }
 
         return redirect()->route('admin.users.index')->with('success', 'اطلاعات کاربر به‌روزرسانی شد.');
     }

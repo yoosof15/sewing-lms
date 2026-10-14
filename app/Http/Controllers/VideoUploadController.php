@@ -11,6 +11,7 @@ use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use App\Models\VideoUploadSession;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,7 @@ class VideoUploadController extends Controller
         return response()->json($this->payload($result));
     }
 
-    public function finalize(Request $request, VideoUploadSession $uploadSession, VideoStorage $storage): JsonResponse
+    public function finalize(Request $request, VideoUploadSession $uploadSession, VideoStorage $storage, AuditService $audit): JsonResponse
     {
         $this->owner($request, $uploadSession);
         $session = VideoUploadSession::with('video')->findOrFail($uploadSession->id);
@@ -112,6 +113,7 @@ class VideoUploadController extends Controller
         if (config('video.processor_driver') !== null && config('video.processor_driver') !== 'null') {
             ProcessLessonVideo::dispatch($video->id)->afterCommit();
         }
+        $audit->record('video.upload_completed', $video, ['lesson_id' => $video->lesson_id, 'size' => $video->size_bytes, 'mime_type' => $video->original_mime_type]);
 
         return response()->json(['video' => $video, 'upload' => $this->payload($session->fresh())], 201);
     }

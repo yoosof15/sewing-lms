@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCourseCategoryRequest;
 use App\Http\Requests\Admin\UpdateCourseCategoryRequest;
 use App\Models\CourseCategory;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,9 +27,10 @@ class CourseCategoryController extends Controller
         return Inertia::render('Admin/Categories/Form', ['category' => null]);
     }
 
-    public function store(StoreCourseCategoryRequest $request): RedirectResponse
+    public function store(StoreCourseCategoryRequest $request, AuditService $audit): RedirectResponse
     {
-        CourseCategory::create($request->validated());
+        $category = CourseCategory::create($request->validated());
+        $audit->record('category.created', $category);
 
         return redirect()->route('admin.categories.index')->with('success', 'دسته‌بندی ایجاد شد.');
     }
@@ -40,9 +42,10 @@ class CourseCategoryController extends Controller
         return Inertia::render('Admin/Categories/Form', ['category' => $category]);
     }
 
-    public function update(UpdateCourseCategoryRequest $request, CourseCategory $category): RedirectResponse
+    public function update(UpdateCourseCategoryRequest $request, CourseCategory $category, AuditService $audit): RedirectResponse
     {
         $category->update($request->validated());
+        $audit->record('category.updated', $category, ['changed_fields' => array_keys($category->getChanges())]);
 
         return redirect()->route('admin.categories.index')->with('success', 'دسته‌بندی به‌روزرسانی شد.');
     }

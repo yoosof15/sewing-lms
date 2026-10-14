@@ -8,6 +8,7 @@ use App\Enums\VideoStatus;
 use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ use Illuminate\Validation\Rule;
 
 class LessonVideoController extends Controller
 {
-    public function publication(Request $request, Lesson $lesson, LessonVideo $video, VideoStorage $storage): RedirectResponse
+    public function publication(Request $request, Lesson $lesson, LessonVideo $video, VideoStorage $storage, AuditService $audit): RedirectResponse
     {
         $this->bound($lesson, $video);
         $this->authorize('update', $video);
@@ -26,15 +27,17 @@ class LessonVideoController extends Controller
             abort_unless($video->processed_storage_key && $storage->exists($video->processed_storage_key), 422, 'Processed video asset is unavailable.');
             abort_unless($video->lesson && $video->lesson->course, 422, 'Video parents are unavailable.');
         }
+        $before = $video->publication_status->value;
         $video->update([
             'publication_status' => $status,
             'published_at' => $status === VideoPublicationStatus::Published ? ($video->published_at ?? now()) : null,
         ]);
+        $audit->record('video.publication_changed', $video, ['from' => $before, 'to' => $status->value]);
 
         return back()->with('success', 'وضعیت انتشار ویدئو به‌روزرسانی شد.');
     }
 
-    public function retry(Lesson $lesson, LessonVideo $video): RedirectResponse
+    public function retry(Lesson $lesson, LessonVideo $video, AuditService $audit): RedirectResponse
     {
         $this->bound($lesson, $video);
         $this->authorize('update', $video);
@@ -42,11 +45,12 @@ class LessonVideoController extends Controller
         abort_unless($video->status === VideoStatus::Failed, 409, 'Only failed videos can be retried.');
         abort_if($video->processing_attempts >= (int) config('video.processing_max_attempts'), 409, 'Maximum processing attempts reached.');
         ProcessLessonVideo::dispatch($video->id);
+        $audit->record('video.processing_retried', $video, ['attempts' => $video->processing_attempts]);
 
         return back()->with('success', 'پردازش مجدد ویدئو در صف قرار گرفت.');
     }
 
-    public function destroy(Lesson $lesson, LessonVideo $video): RedirectResponse
+    public function destroy(Lesson $lesson, LessonVideo $video, AuditService $audit): RedirectResponse
     {
         $this->bound($lesson, $video);
         $this->authorize('delete', $video);
@@ -55,11 +59,12 @@ class LessonVideoController extends Controller
             $video->delete();
             $this->normalize($lesson);
         });
+        $audit->record('video.archived', $video, ['lesson_id' => $lesson->id]);
 
         return back()->with('success', 'ویدئو بایگانی شد.');
     }
 
-    public function move(Lesson $lesson, LessonVideo $video, string $direction): RedirectResponse
+    public function move(Lesson $lesson, LessonVideo $video, string $direction, AuditService $audit): RedirectResponse
     {
         $this->bound($lesson, $video);
         $this->authorize('update', $video);
@@ -75,6 +80,7 @@ class LessonVideoController extends Controller
                 $other->update(['sort_order' => $a]);
                 $video->update(['sort_order' => $b]);
             });
+            $audit->record('video.reordered', $video, ['direction' => $direction]);
         }
 
         return back();

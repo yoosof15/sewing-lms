@@ -28,7 +28,9 @@ class VideoProgressController extends Controller
         ]);
         $progress = DB::transaction(function () use ($request, $video, $position) {
             $progress = VideoProgress::where('user_id', $request->user()->id)->where('lesson_video_id', $video->id)->lockForUpdate()->firstOrFail();
-            $elapsed = $progress->last_heartbeat_at ? max(0, $progress->last_heartbeat_at->diffInSeconds(now())) : 0;
+            // Whole wall-clock seconds keep the allowance deterministic and
+            // avoid request-processing microseconds granting an extra second.
+            $elapsed = $progress->last_heartbeat_at ? max(0, now()->timestamp - $progress->last_heartbeat_at->timestamp) : 0;
             $forward = max(0, $position - $progress->last_position_seconds);
             $creditLimit = (int) floor($elapsed * (float) config('learning.max_playback_rate_credit') + (int) config('learning.progress_credit_tolerance_seconds'));
             $credit = $progress->last_heartbeat_at ? min($forward, $creditLimit) : 0;

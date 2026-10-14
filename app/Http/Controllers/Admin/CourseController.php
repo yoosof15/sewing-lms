@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateCourseRequest;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +33,7 @@ class CourseController extends Controller
         return Inertia::render('Admin/Courses/Form', [...$this->options(), 'course' => null]);
     }
 
-    public function store(StoreCourseRequest $request): RedirectResponse
+    public function store(StoreCourseRequest $request, AuditService $audit): RedirectResponse
     {
         $path = $request->file('cover_image')?->store('course-covers', 'public');
         try {
@@ -51,6 +52,7 @@ class CourseController extends Controller
             }
             throw $exception;
         }
+        $audit->record('course.created', $course, ['status' => $course->status->value]);
 
         return redirect()->route('admin.courses.show', $course)->with('success', 'دوره ایجاد شد.');
     }
@@ -69,8 +71,10 @@ class CourseController extends Controller
         return Inertia::render('Admin/Courses/Form', [...$this->options(), 'course' => $this->courseData($course)]);
     }
 
-    public function update(UpdateCourseRequest $request, Course $course): RedirectResponse
+    public function update(UpdateCourseRequest $request, Course $course, AuditService $audit): RedirectResponse
     {
+        $beforeStatus = $course->status->value;
+        $beforeTeachers = $course->teachers()->pluck('users.id')->all();
         $newPath = $request->file('cover_image')?->store('course-covers', 'public');
         $oldPath = $course->cover_image;
         try {
@@ -92,6 +96,18 @@ class CourseController extends Controller
         if ($newPath && $oldPath) {
             Storage::disk('public')->delete($oldPath);
         }
+        $course->refresh();
+        $audit->record('course.updated', $course, ['changed_fields' => array_keys($course->getChanges())]);
+        if ($beforeStatus !== $course->status->value) {
+            $audit->record('course.status_changed', $course, ['from' => $beforeStatus, 'to' => $course->status->value]);
+        }
+        $afterTeachers = $course->teachers()->pluck('users.id')->all();
+        foreach (array_diff($afterTeachers, $beforeTeachers) as $id) {
+            $audit->record('course.teacher_assigned', $course, ['teacher_id' => $id]);
+        }
+        foreach (array_diff($beforeTeachers, $afterTeachers) as $id) {
+            $audit->record('course.teacher_removed', $course, ['teacher_id' => $id]);
+        }
 
         return redirect()->route('admin.courses.show', $course)->with('success', 'دوره به‌روزرسانی شد.');
     }
@@ -103,6 +119,9 @@ class CourseController extends Controller
 
     private function courseData(Course $course): Course
     {
-        return $course->load(['category:id,name', 'teachers:id,first_name,last_name', 'lessons.creator:id,first_name,last_name']);
+        $course->load(['category:id,name', 'teachers:id,first_name,last_name']);
+        $course->setRelation('lessons', $course->lessons()->withTrashed()->with('creator:id,first_name,last_name')->orderBy('sort_order')->get());
+
+        return $course;
     }
 }

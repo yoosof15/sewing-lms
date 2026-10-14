@@ -6,6 +6,7 @@ use App\Contracts\VideoProcessor;
 use App\Contracts\VideoStorage;
 use App\Enums\VideoStatus;
 use App\Models\LessonVideo;
+use App\Services\AuditService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,6 +48,7 @@ class ProcessLessonVideo implements ShouldBeUnique, ShouldQueue
 
     public function handle(VideoProcessor $processor, VideoStorage $storage): void
     {
+        $audit = app(AuditService::class);
         $video = DB::transaction(function () {
             $video = LessonVideo::lockForUpdate()->find($this->videoId);
             if (! $video || ! $video->status->canStartProcessing() || $video->processing_attempts >= (int) config('video.processing_max_attempts')) {
@@ -65,6 +67,7 @@ class ProcessLessonVideo implements ShouldBeUnique, ShouldQueue
         if (! $video) {
             return;
         }
+        $audit->record('video.processing_started', $video, ['attempt' => $video->processing_attempts]);
 
         $workspace = rtrim((string) config('video.processing_temp_path'), '\\/');
         $outputPath = $workspace.DIRECTORY_SEPARATOR.Str::lower((string) Str::ulid()).'.mp4';
@@ -118,6 +121,7 @@ class ProcessLessonVideo implements ShouldBeUnique, ShouldQueue
                 }
             }
             Log::info('Video processing completed', ['lesson_video_id' => $video->id, 'processor' => $processor->name(), 'attempt' => $video->processing_attempts, 'stage' => 'complete']);
+            $audit->record('video.processing_succeeded', $video->fresh(), ['attempt' => $video->processing_attempts]);
         } catch (Throwable $e) {
             if ($storedOutput) {
                 $storage->delete($processedKey);
@@ -127,6 +131,7 @@ class ProcessLessonVideo implements ShouldBeUnique, ShouldQueue
                 'failure_reason' => 'پردازش ویدئو ناموفق بود. لطفاً دوباره تلاش کنید.',
             ]);
             Log::error('Video processing failed', ['lesson_video_id' => $video->id, 'processor' => $processor->name(), 'attempt' => $video->processing_attempts, 'stage' => 'process', 'category' => get_class($e), 'technical_message' => $e->getMessage()]);
+            $audit->record('video.processing_failed', $video->fresh(), ['attempt' => $video->processing_attempts, 'error_type' => $e::class]);
         } finally {
             if (is_file($outputPath)) {
                 unlink($outputPath);

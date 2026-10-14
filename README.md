@@ -165,3 +165,24 @@ php artisan db:seed --class=PhaseThreeDemoSeeder
 ```
 
 این seeder فقط در محیط `local` اجرا می‌شود، کاربر یا فایل باینری نمی‌سازد و رمزها را تغییر نمی‌دهد.
+## عملیات و سخت‌سازی (فاز ۸)
+
+رویدادهای مهم مدیریتی/آموزشی در Audit Log ثبت می‌شوند؛ password، token، session payload، cookie و storage key وارد metadata نمی‌شوند. حذف عادی Course/Lesson/Video/Attachment به‌معنای بایگانی است. حذف دائمی فقط برای Admin، پس از بایگانی و با تأیید صریح مجاز است. دوره دارای سابقه ثبت‌نام یا یادگیری از UI purge نمی‌شود.
+
+فرمان‌های عملیاتی:
+
+```powershell
+php artisan video:verify-assets
+php artisan video:cleanup-uploads
+php artisan video:dispatch-pending --limit=100
+php artisan queue:failed
+php artisan queue:retry ID
+php artisan queue:forget ID
+php artisan queue:work --stop-when-empty --tries=1 --timeout=7200
+```
+
+پاک‌سازی دائمی ویدیو با job دیتابیسی و از طریق قرارداد `VideoStorage` انجام می‌شود. عملیات idempotent است و شکست provider، metadata ویدیو را برای retry نگه می‌دارد. راهنمای کامل استقرار و backup در `docs/production-readiness.md` است.
+
+endpointهای پرهزینه دارای محدودیت معقول‌اند: شروع upload برابر ۲۰ درخواست در دقیقه، retry پردازش ۱۰، heartbeat برابر ۱۲۰ و لغو نشست برابر ۲۰ درخواست در دقیقه. chunkهای ویدیو عمداً rate-limit تهاجمی ندارند.
+
+هدرهای `nosniff`، `SAMEORIGIN`، Referrer Policy و Permissions Policy اعمال می‌شوند. CSP سخت تا زمان تست کامل Vite/Inertia به تعویق افتاده است.

@@ -81,3 +81,14 @@
 - واترمارک server-authored شامل نام و موبایل ماسک‌شده است و با CSS/Vue جابه‌جا می‌شود؛ ورودی هویتی از client پذیرفته نمی‌شود. overlay سبک است، داخل فایل encode نمی‌شود و DRM محسوب نمی‌شود. fullscreen بومی برخی platformها ممکن است overlay را حذف کند.
 - حفاظت هم‌زمانی در سطح «نشست فعال Laravel» است، نه fingerprint سخت‌افزار. جدول موجود `sessions` با lifetime خود Laravel مرجع است. login بیش از حد رد می‌شود، ردیف منقضی شمرده نمی‌شود، نشست جاری از حذف تصادفی محافظت می‌شود و حذف ردیف نشست درخواست محافظت‌شده بعدی را unauthenticated می‌کند.
 - token مدیریت نشست HMAC یک‌طرفه از session id است. UI نه id خام، نه payload و نه IP کامل را دریافت می‌کند. کاربر فقط نشست خودش و Admin نشست کاربران را مدیریت می‌کند؛ همه endpointها ownership/role را دوباره بررسی می‌کنند.
+## مرز عملیاتی، Audit و چرخه بایگانی (فاز ۸)
+
+- `AuditService` مرز واحد ثبت رویداد است و پیش از persistence کلیدهای حساس را حذف می‌کند. شکست audit در log فنی ثبت می‌شود و عملیات اصلی را خراب نمی‌کند؛ بنابراین audit تضمین تراکنش اتمی با mutation دامنه نیست.
+- `AuditLog` append-only است و global UI آن فقط زیر middleware نقش Admin قرار دارد. heartbeat، Range، page view و progress audit نمی‌شوند.
+- Course، Lesson، LessonVideo و CourseCategory از SoftDeletes استفاده می‌کنند؛ LessonAttachment نیز با migration افزایشی SoftDeletes گرفته است. archive بلافاصله scopeهای عادی و دسترسی Student را می‌بندد و فایل فیزیکی را نگه می‌دارد.
+- restore فرزند تنها وقتی مجاز است که والد فعال باشد. بازیابی Course فرزندان را خودکار restore نمی‌کند؛ این رفتار از بازگشت ناخواسته محتوا جلوگیری می‌کند.
+- purge ویدیو از مسیر job قابل‌تکرار `PurgeLessonVideo` و فقط پشت قرارداد `VideoStorage` انجام می‌شود. رکورد تا حذف موفق source و processed asset باقی می‌ماند. فایل از قبل مفقود، موفقیت idempotent محسوب می‌شود.
+- Course دارای Enrollment یا سابقه یادگیری از UI به‌طور دائمی حذف نمی‌شود و باید بایگانی بماند. Enrollment history با status حفظ می‌شود و User غیرفعال می‌شود، نه حذف.
+- `video:verify-assets` تطابق referenceهای DB با storage و READY بدون processed asset را فقط گزارش می‌کند و فایل ناشناخته‌ای را حذف نمی‌کند.
+- production بر database queue و cron سازگار با cPanel تکیه دارد و Redis/Supervisor را فرض نمی‌کند. Phase 9 باید adapter خارجی را پشت `VideoStorage`/`VideoDelivery` و processor جایگزین‌پذیر اضافه کند.
+- تنظیمات production شامل HTTPS، secure cookie، `APP_DEBUG=false` و عدم نمایش stderr/path/secret است. CSP سخت تا تست سازگاری کامل deferred است.

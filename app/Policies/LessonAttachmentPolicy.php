@@ -16,4 +16,9 @@ class LessonAttachmentPolicy
     {
         return $user->can('update', $attachment->lesson);
     }
+
+    public function delete(User $user, LessonAttachment $attachment): bool
+    {
+        return $user->can('update', $attachment->lesson);
+    }
 }

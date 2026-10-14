@@ -6,6 +6,7 @@ use App\Enums\LessonStatus;
 use App\Http\Requests\SaveLessonRequest;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class LessonController extends Controller
         return Inertia::render('Lessons/Form', ['course' => $course, 'lesson' => null, 'statuses' => $this->statuses()]);
     }
 
-    public function store(SaveLessonRequest $request, Course $course): RedirectResponse
+    public function store(SaveLessonRequest $request, Course $course, AuditService $audit): RedirectResponse
     {
         $lesson = DB::transaction(function () use ($request, $course) {
             $order = ((int) $course->lessons()->max('sort_order')) + 1;
@@ -31,6 +32,7 @@ class LessonController extends Controller
 
             return $course->lessons()->create($data);
         });
+        $audit->record('lesson.created', $lesson, ['course_id' => $course->id, 'status' => $lesson->status->value]);
 
         return redirect()->route($this->prefix($request).'.lessons.edit', [$course, $lesson])->with('success', 'درس ایجاد شد.');
     }
@@ -40,20 +42,28 @@ class LessonController extends Controller
         $this->bound($course, $lesson);
         $this->authorize('update', $lesson);
 
-        return Inertia::render('Lessons/Form', ['course' => $course, 'lesson' => $lesson->load(['attachments', 'videos.uploader:id,first_name,last_name']), 'statuses' => $this->statuses(), 'videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]);
+        $lesson->setRelation('attachments', $lesson->attachments()->withTrashed()->get());
+        $lesson->setRelation('videos', $lesson->videos()->withTrashed()->with('uploader:id,first_name,last_name')->orderBy('sort_order')->get());
+
+        return Inertia::render('Lessons/Form', ['course' => $course, 'lesson' => $lesson, 'statuses' => $this->statuses(), 'videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]);
     }
 
-    public function update(SaveLessonRequest $request, Course $course, Lesson $lesson): RedirectResponse
+    public function update(SaveLessonRequest $request, Course $course, Lesson $lesson, AuditService $audit): RedirectResponse
     {
         $this->bound($course, $lesson);
         $data = $request->validated();
         $data['published_at'] = $data['status'] === LessonStatus::Published->value ? ($lesson->published_at ?? now()) : null;
+        $before = $lesson->status->value;
         $lesson->update($data);
+        $audit->record('lesson.updated', $lesson, ['changed_fields' => array_keys($lesson->getChanges())]);
+        if ($before !== $lesson->status->value) {
+            $audit->record('lesson.status_changed', $lesson, ['from' => $before, 'to' => $lesson->status->value]);
+        }
 
         return back()->with('success', 'درس به‌روزرسانی شد.');
     }
 
-    public function destroy(Course $course, Lesson $lesson): RedirectResponse
+    public function destroy(Course $course, Lesson $lesson, AuditService $audit): RedirectResponse
     {
         $this->bound($course, $lesson);
         $this->authorize('delete', $lesson);
@@ -62,11 +72,12 @@ class LessonController extends Controller
             $lesson->delete();
             $this->normalize($course);
         });
+        $audit->record('lesson.archived', $lesson, ['course_id' => $course->id]);
 
         return back()->with('success', 'درس بایگانی شد.');
     }
 
-    public function move(Course $course, Lesson $lesson, string $direction): RedirectResponse
+    public function move(Course $course, Lesson $lesson, string $direction, AuditService $audit): RedirectResponse
     {
         $this->bound($course, $lesson);
         $this->authorize('update', $lesson);
@@ -82,6 +93,7 @@ class LessonController extends Controller
                 $other->update(['sort_order' => $old]);
                 $lesson->update(['sort_order' => $otherOld]);
             });
+            $audit->record('lesson.reordered', $lesson, ['direction' => $direction]);
         }
 
         return back();

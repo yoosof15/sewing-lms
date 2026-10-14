@@ -26,16 +26,16 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                     <div><label>عنوان</label><input v-model="form.title"><p class="text-sm text-red-600">{{ form.errors.title }}</p></div>
                     <div><label>محتوای متنی</label><textarea v-model="form.content" rows="12" class="w-full rounded-xl border p-3"></textarea></div>
                     <div><label>وضعیت</label><select v-model="form.status"><option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option></select></div>
-                    <div class="flex gap-3"><button class="rounded-xl bg-teal-700 px-5 py-2.5 text-white">ذخیره</button><Link :href="`/${role}/courses/${course.id}`" class="rounded-xl border px-5 py-2.5">بازگشت</Link></div>
+                    <div class="flex gap-3"><button :disabled="form.processing" class="rounded-xl bg-teal-700 px-5 py-2.5 text-white disabled:opacity-50">{{ form.processing ? 'در حال ذخیره…' : 'ذخیره' }}</button><Link :href="`/${role}/courses/${course.id}`" class="rounded-xl border px-5 py-2.5">بازگشت</Link></div>
                 </form>
             </section>
             <section v-if="editing" class="rounded-2xl border bg-white p-6">
                 <h2 class="mb-4 font-bold">ویدئوها</h2>
                 <VideoUploader :lesson-id="lesson.id" :max-bytes="videoConfig.maxBytes" />
                 <div class="mt-4 space-y-3">
-                    <div v-for="video in lesson.videos" :key="video.id" class="flex flex-wrap justify-between gap-3 rounded-xl bg-slate-50 p-4">
+                    <div v-for="video in lesson.videos" :key="video.id" class="flex flex-wrap justify-between gap-3 rounded-xl bg-slate-50 p-4" :class="video.deleted_at ? 'opacity-70' : ''">
                         <div class="space-y-1">
-                            <strong>{{ video.sort_order }}. {{ video.title }}</strong>
+                            <strong>{{ video.sort_order }}. {{ video.title }}</strong><span v-if="video.deleted_at" class="mr-2 text-xs text-red-700">بایگانی‌شده</span>
                             <p class="text-sm" :class="video.status === 'FAILED' ? 'text-red-700' : 'text-teal-700'">وضعیت پردازش: {{ statusLabel(video.status) }}</p>
                             <p class="text-sm text-slate-700">وضعیت انتشار: {{ publicationLabel(video.publication_status) }}</p>
                             <p class="text-xs text-slate-500">{{ video.original_filename }} — حجم اصلی: {{ format(video.size_bytes) }}</p>
@@ -48,7 +48,8 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                             <p v-if="video.status === 'FAILED'" class="text-xs text-red-600">{{ video.failure_reason }}</p>
                             <p class="text-xs">بارگذار: {{ video.uploader.first_name }} {{ video.uploader.last_name }}</p>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div v-if="video.deleted_at && role === 'admin'" class="flex items-center gap-3"><Link :href="`/admin/lessons/${lesson.id}/videos/${video.id}/restore`" method="post" as="button" class="text-teal-700">بازیابی</Link><Link :href="`/admin/purge/videos/${video.id}`" method="delete" :data="{confirmation:'PURGE'}" as="button" class="text-red-700">حذف دائمی تأییدشده</Link></div>
+                        <div v-else-if="!video.deleted_at" class="flex items-center gap-3">
                             <a v-if="video.status === 'READY'" :href="`/videos/${video.id}/preview`" target="_blank" class="rounded-lg border px-3 py-1">پیش‌نمایش</a>
                             <Link v-if="video.status === 'READY' && video.publication_status !== 'PUBLISHED'" :href="`/lessons/${lesson.id}/videos/${video.id}/publication`" method="patch" :data="{ publication_status: 'PUBLISHED' }" as="button" class="rounded-lg border border-teal-700 px-3 py-1 text-teal-800">انتشار</Link>
                             <Link v-if="video.publication_status === 'PUBLISHED'" :href="`/lessons/${lesson.id}/videos/${video.id}/publication`" method="patch" :data="{ publication_status: 'INACTIVE' }" as="button" class="rounded-lg border px-3 py-1">غیرفعال‌سازی</Link>
@@ -65,10 +66,10 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                 <h2 class="mb-4 font-bold">فایل‌های ضمیمه</h2>
                 <form class="flex flex-wrap gap-3" @submit.prevent="upload.post(`/lessons/${lesson.id}/attachments`, { onSuccess: () => upload.reset() })">
                     <input type="file" class="max-w-md" @change="upload.attachment = $event.target.files[0]">
-                    <button class="rounded-xl border px-4 py-2">بارگذاری</button>
+                    <button :disabled="upload.processing" class="rounded-xl border px-4 py-2 disabled:opacity-50">{{ upload.processing ? 'در حال بارگذاری…' : 'بارگذاری' }}</button>
                 </form>
                 <p class="mt-2 text-sm text-red-600">{{ upload.errors.attachment }}</p>
-                <ul class="mt-4 space-y-2"><li v-for="file in lesson.attachments" :key="file.id"><a :href="`/attachments/${file.id}/download`" class="block rounded-lg bg-slate-50 p-2 text-teal-700">{{ file.original_name }}</a></li></ul>
+                <ul class="mt-4 space-y-2"><li v-for="file in lesson.attachments" :key="file.id" class="flex items-center justify-between rounded-lg bg-slate-50 p-2"><span :class="file.deleted_at ? 'text-slate-500' : 'text-teal-700'"><a v-if="!file.deleted_at" :href="`/attachments/${file.id}/download`">{{ file.original_name }}</a><template v-else>{{ file.original_name }} — بایگانی‌شده</template></span><Link v-if="!file.deleted_at" :href="`/attachments/${file.id}`" method="delete" as="button" class="text-sm text-red-700">بایگانی</Link><Link v-else-if="role==='admin'" :href="`/admin/purge/attachments/${file.id}`" method="delete" :data="{confirmation:'PURGE'}" as="button" class="text-sm text-red-700">حذف دائمی تأییدشده</Link></li><li v-if="!lesson.attachments.length" class="text-slate-500">فایلی پیوست نشده است.</li></ul>
             </section>
         </div>
     </AppLayout>
