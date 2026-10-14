@@ -40,7 +40,7 @@ class LessonController extends Controller
         $this->bound($course, $lesson);
         $this->authorize('update', $lesson);
 
-        return Inertia::render('Lessons/Form', ['course' => $course, 'lesson' => $lesson->load(['attachments', 'videos.uploader:id,first_name,last_name']), 'statuses' => $this->statuses(), 'videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024]]);
+        return Inertia::render('Lessons/Form', ['course' => $course, 'lesson' => $lesson->load(['attachments', 'videos.uploader:id,first_name,last_name']), 'statuses' => $this->statuses(), 'videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]);
     }
 
     public function update(SaveLessonRequest $request, Course $course, Lesson $lesson): RedirectResponse

@@ -69,6 +69,36 @@ php artisan serve --host=0.0.0.0 --port=8000
 php artisan video:cleanup-uploads
 ```
 
+## پردازش ویدئو (فاز ۵)
+
+وجود ابزارها را بدون نصب خودکار بررسی کنید:
+
+```powershell
+ffmpeg -version
+ffprobe -version
+```
+
+پردازش پس از پایان آپلود به صف دیتابیس فرستاده می‌شود و نباید داخل درخواست HTTP اجرا شود. برای توسعه worker را جداگانه اجرا کنید:
+
+```powershell
+php artisan queue:work --tries=1 --timeout=7200
+php artisan queue:failed
+```
+
+ابزارهای بازیابی مدیر سیستم:
+
+```powershell
+php artisan video:process 123
+php artisan video:process 123 --sync
+php artisan video:dispatch-pending --limit=100
+```
+
+گزینه‌های اصلی `.env` عبارت‌اند از `VIDEO_PROCESSOR_DRIVER`، مسیرهای `FFMPEG_BINARY` و `FFPROBE_BINARY`، حداکثر ابعاد و fps، codecها، `VIDEO_CRF=22`، `VIDEO_PRESET=medium`، سیاست `VIDEO_KEEP_ORIGINAL`، سقف تلاش و timeout. با `VIDEO_PROCESSOR_DRIVER=null` آپلود فعال می‌ماند و ویدئو در وضعیت `STORED` منتظر پردازش آینده می‌ماند.
+
+خروجی موقت به‌طور پیش‌فرض در `storage/app/private/video-processing` ساخته و پس از موفقیت یا شکست پاک می‌شود. هنگام پردازش باید علاوه بر فایل منبع، فضای کافی برای خروجی MP4 و سربار وجود داشته باشد. مقدار `DB_QUEUE_RETRY_AFTER` باید از `VIDEO_PROCESSING_TIMEOUT` بیشتر باشد؛ پیش‌فرض‌ها به‌ترتیب ۷۵۰۰ و ۷۲۰۰ ثانیه‌اند.
+
+در cPanel، اگر FFmpeg موجود باشد Cron می‌تواند worker کوتاه‌عمر اجرا کند، برای نمونه `php artisan queue:work --stop-when-empty --tries=1 --timeout=7200`. اگر FFmpeg وجود ندارد، پردازشگر پشت قرارداد `VideoProcessor` باید در آینده با worker/VPS جداگانه یا سرویس خارجی جایگزین شود. اجرای FFmpeg طولانی در درخواست وب توصیه نمی‌شود.
+
 سیاست تاریخ/زمان، ذخیره ویدئو و محدودیت‌های cPanel در [docs/architecture.md](docs/architecture.md) ثبت شده است.
 
 ## داده نمایشی فاز ۲

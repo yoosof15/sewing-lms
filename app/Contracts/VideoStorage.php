@@ -24,5 +24,9 @@ interface VideoStorage
 
     public function delete(string $key): void;
 
+    public function localPathForProcessing(string $key): string;
+
+    public function storeProcessed(string $localPath, string $storageKey): void;
+
     public function driver(): string;
 }

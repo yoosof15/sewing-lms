@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\VideoProcessor;
 use App\Contracts\VideoStorage;
+use App\Services\LocalFFmpegVideoProcessor;
 use App\Services\LocalVideoStorage;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -20,6 +22,13 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return new LocalVideoStorage;
+        });
+        $this->app->bind(VideoProcessor::class, function () {
+            if (config('video.processor_driver') !== 'ffmpeg') {
+                throw new RuntimeException('Configured video processor is unavailable.');
+            }
+
+            return new LocalFFmpegVideoProcessor;
         });
     }
 

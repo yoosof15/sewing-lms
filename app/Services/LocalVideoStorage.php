@@ -89,6 +89,30 @@ class LocalVideoStorage implements VideoStorage
         $this->disk()->delete($key);
     }
 
+    public function localPathForProcessing(string $key): string
+    {
+        if (! $this->exists($key)) {
+            throw new RuntimeException('Video source does not exist.');
+        }
+
+        return $this->disk()->path($key);
+    }
+
+    public function storeProcessed(string $localPath, string $storageKey): void
+    {
+        $stream = fopen($localPath, 'rb');
+        if (! $stream) {
+            throw new RuntimeException('Processed video cannot be opened.');
+        }
+        try {
+            if (! $this->disk()->writeStream($storageKey, $stream)) {
+                throw new RuntimeException('Processed video could not be stored.');
+            }
+        } finally {
+            fclose($stream);
+        }
+    }
+
     public function driver(): string
     {
         return 'local';

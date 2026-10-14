@@ -9,4 +9,9 @@ enum VideoStatus: string
     case Processing = 'PROCESSING';
     case Ready = 'READY';
     case Failed = 'FAILED';
+
+    public function canStartProcessing(): bool
+    {
+        return in_array($this, [self::Stored, self::Failed], true);
+    }
 }

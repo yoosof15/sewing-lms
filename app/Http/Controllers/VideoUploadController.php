@@ -7,6 +7,7 @@ use App\Enums\VideoStatus;
 use App\Enums\VideoUploadStatus;
 use App\Exceptions\VideoOffsetMismatch;
 use App\Http\Requests\InitiateVideoUploadRequest;
+use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use App\Models\VideoUploadSession;
@@ -106,6 +107,10 @@ class VideoUploadController extends Controller
             $session->update(['status' => VideoUploadStatus::Failed, 'failure_reason' => 'ثبت نهایی ویدئو ناموفق بود.']);
             Log::error('Video upload persistence failed', ['upload_session' => $session->public_id, 'user_id' => $session->user_id, 'lesson_id' => $session->lesson_id, 'stage' => 'persist', 'category' => get_class($e)]);
             throw $e;
+        }
+
+        if (config('video.processor_driver') !== null && config('video.processor_driver') !== 'null') {
+            ProcessLessonVideo::dispatch($video->id)->afterCommit();
         }
 
         return response()->json(['video' => $video, 'upload' => $this->payload($session->fresh())], 201);

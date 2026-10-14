@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessLessonVideo;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\User;
 use App\Models\VideoUploadSession;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -116,6 +118,7 @@ class VideoUploadTest extends TestCase
 
     public function test_valid_mp4_finalizes_privately_and_finalize_is_idempotent(): void
     {
+        Queue::fake();
         $bytes = $this->mp4();
         $id = $this->initiate($this->admin, strlen($bytes))->json('id');
         $this->chunk($this->admin, $id, 0, $bytes)->assertOk();
@@ -128,6 +131,7 @@ class VideoUploadTest extends TestCase
         $this->assertStringStartsWith('videos/', $video->storage_key);
         Storage::disk('video_local')->assertExists($video->storage_key);
         $this->get('/storage/'.$video->storage_key)->assertForbidden();
+        Queue::assertPushed(ProcessLessonVideo::class, fn ($job) => $job->videoId === $video->id);
     }
 
     public function test_nested_video_session_authorization_is_rechecked(): void
@@ -135,5 +139,17 @@ class VideoUploadTest extends TestCase
         $id = $this->initiate($this->admin, 3)->json('id');
         $this->lesson->delete();
         $this->chunk($this->admin, $id, 0, 'abc')->assertForbidden();
+    }
+
+    public function test_disabled_processing_leaves_finalized_video_stored_without_dispatch(): void
+    {
+        Queue::fake();
+        config(['video.processor_driver' => null]);
+        $bytes = $this->mp4();
+        $id = $this->initiate($this->admin, strlen($bytes))->json('id');
+        $this->chunk($this->admin, $id, 0, $bytes)->assertOk();
+        $this->actingAs($this->admin)->postJson("/video-uploads/$id/finalize")->assertCreated();
+        $this->assertSame('STORED', $this->lesson->videos()->first()->status->value);
+        Queue::assertNotPushed(ProcessLessonVideo::class);
     }
 }

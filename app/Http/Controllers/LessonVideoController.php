@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VideoStatus;
+use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use Illuminate\Http\RedirectResponse;
@@ -9,6 +11,18 @@ use Illuminate\Support\Facades\DB;
 
 class LessonVideoController extends Controller
 {
+    public function retry(Lesson $lesson, LessonVideo $video): RedirectResponse
+    {
+        $this->bound($lesson, $video);
+        $this->authorize('update', $video);
+        abort_if(config('video.processor_driver') === null || config('video.processor_driver') === 'null', 409, 'Video processing is disabled.');
+        abort_unless($video->status === VideoStatus::Failed, 409, 'Only failed videos can be retried.');
+        abort_if($video->processing_attempts >= (int) config('video.processing_max_attempts'), 409, 'Maximum processing attempts reached.');
+        ProcessLessonVideo::dispatch($video->id);
+
+        return back()->with('success', 'پردازش مجدد ویدئو در صف قرار گرفت.');
+    }
+
     public function destroy(Lesson $lesson, LessonVideo $video): RedirectResponse
     {
         $this->bound($lesson, $video);

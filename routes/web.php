@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
         Route::post('video-uploads/{uploadSession}/finalize', [VideoUploadController::class, 'finalize'])->name('video-uploads.finalize');
         Route::delete('video-uploads/{uploadSession}', [VideoUploadController::class, 'cancel'])->name('video-uploads.cancel');
         Route::post('lessons/{lesson}/videos/{video}/move/{direction}', [LessonVideoController::class, 'move'])->name('videos.move');
+        Route::post('lessons/{lesson}/videos/{video}/retry', [LessonVideoController::class, 'retry'])->name('videos.retry');
         Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
     });
 });

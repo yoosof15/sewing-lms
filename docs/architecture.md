@@ -40,3 +40,23 @@
 - FFmpeg، تبدیل، thumbnail، HLS، player و دسترسی هنرجو بخشی از این فاز نیستند. پردازش آینده باید یک سرویس/کار مستقل و قابل جایگزینی باشد و وجود FFmpeg یا daemon دائمی روی cPanel را فرض نکند.
 - ایجاد نشست و مدیریت ویدئو با policy درس کنترل می‌شود. نشست فقط برای سازنده‌اش قابل استفاده است و مجوز درس در هر درخواست دوباره بررسی می‌شود. مدیر می‌تواند همه را مدیریت کند؛ مدرس فقط ویدئوی درس ساخته‌شده توسط خودش در دورهٔ منتسب را.
 - فایل‌های موقت منقضی با `php artisan video:cleanup-uploads` حذف و نشست‌ها `EXPIRED` می‌شوند. در تولید cPanel اجرای دوره‌ای این فرمان از طریق Cron لازم است.
+
+## خط پردازش ویدئو (فاز ۵)
+
+جریان آپلود:
+
+`Phone → VideoUploadSession → VideoStorage source → LessonVideo STORED`
+
+جریان پردازش:
+
+`LessonVideo STORED → ProcessLessonVideo job → VideoProcessor → FFprobe → FFmpeg → processed VideoStorage asset → LessonVideo READY`
+
+- `VideoProcessor` مرز کاربردی پردازش است. پیاده‌سازی فعلی `LocalFFmpegVideoProcessor` با آرگومان‌های جداگانهٔ Symfony Process اجرا می‌شود و ورودی کاربر را وارد shell command نمی‌کند. جایگزینی آن با remote worker یا سرویس خارجی نباید منطق Course/Lesson را تغییر دهد.
+- FFprobe مرجع metadata است. مدت، ابعاد، fps، codec و container از فایل واقعی خوانده می‌شوند. خروجی H.264/AAC MP4 با faststart، CRF 22 و preset medium است؛ نسبت تصویر حفظ می‌شود، تصویر بزرگ نمی‌شود و fps فقط در صورت بیشتر بودن از سقف کاهش می‌یابد. autorotation پیش‌فرض FFmpeg حفظ می‌شود و ابعاد portrait با جهت مناسب محدود می‌شوند.
+- source و processed دو asset مجزا هستند. پردازش روی workspace خصوصی انجام و خروجی فقط پس از بررسی وجود، اندازه، stream، codec، مدت و ابعاد ذخیره می‌شود. شکست، خروجی ناقص را پاک و source را حفظ می‌کند.
+- job با unique job، overlap lock و claim تراکنشی از پردازش هم‌زمان جلوگیری می‌کند. گذار مجاز شروع فقط `STORED/FAILED → PROCESSING` است؛ موفقیت به `READY` و شکست به `FAILED` می‌رود. retry وب فقط برای FAILED، تا سقف پیکربندی‌شده و با policy موجود مجاز است.
+- با `VIDEO_KEEP_ORIGINAL=false` حذف source فقط پس از ذخیره، validation و ثبت موفق processed asset انجام می‌شود. خطای حذف source وضعیت READY یا processed asset را خراب نمی‌کند و برای بازیابی عملیاتی log می‌شود.
+- حالت processor غیرفعال، آپلود را متوقف نمی‌کند و ویدئو را صادقانه در `STORED` نگه می‌دارد. فرمان `video:dispatch-pending` این موارد را پس از فعال‌شدن processor بازیابی می‌کند.
+- در cPanel سه مسیر تولید معتبر می‌ماند: FFmpeg روی همان host، worker/VPS جداگانه، یا سرویس پردازش خارجی. هیچ daemon دائمی، Redis یا دسترسی root پیش‌فرض نیست.
+
+فاز ۶ مرز `READY → protected playback` را پیاده خواهد کرد. HLS، player، URL امضاشده و دسترسی هنرجو در فاز ۵ وجود ندارند.
