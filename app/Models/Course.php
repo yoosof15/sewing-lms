@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CourseNavigationMode;
 use App\Enums\CourseStatus;
 use App\Support\UniqueSlug;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,11 +16,11 @@ class Course extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['category_id', 'title', 'short_description', 'description', 'cover_image', 'status', 'published_at', 'completion_threshold_percent'];
+    protected $fillable = ['category_id', 'title', 'short_description', 'description', 'cover_image', 'status', 'navigation_mode', 'published_at', 'completion_threshold_percent'];
 
     protected function casts(): array
     {
-        return ['status' => CourseStatus::class, 'published_at' => 'datetime', 'completion_threshold_percent' => 'integer'];
+        return ['status' => CourseStatus::class, 'navigation_mode' => CourseNavigationMode::class, 'published_at' => 'datetime', 'completion_threshold_percent' => 'integer'];
     }
 
     protected static function booted(): void
@@ -45,5 +46,10 @@ class Course extends Model
     public function lessons(): HasMany
     {
         return $this->hasMany(Lesson::class)->orderBy('sort_order');
+    }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(CourseSection::class)->orderBy('sort_order');
     }
 }

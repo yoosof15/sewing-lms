@@ -21,6 +21,6 @@ class CourseController extends Controller
     {
         $this->authorize('view', $course);
 
-        return Inertia::render('Teacher/Courses/Show', ['course' => $course->load(['category:id,name', 'teachers:id,first_name,last_name', 'lessons.creator:id,first_name,last_name'])]);
+        return Inertia::render('Teacher/Courses/Show', ['course' => $course->load(['category:id,name', 'teachers:id,first_name,last_name', 'sections', 'lessons.creator:id,first_name,last_name', 'lessons.section'])]);
     }
 }

@@ -21,7 +21,10 @@ class LearningProgressService
     public function courses(User $student, Collection $courses): array
     {
         $courseIds = $courses->pluck('id');
-        $lessons = Lesson::query()->whereIn('course_id', $courseIds)->where('status', LessonStatus::Published->value)->get(['id', 'course_id']);
+        $lessons = Lesson::query()->leftJoin('course_sections', 'course_sections.id', '=', 'lessons.section_id')
+            ->whereIn('lessons.course_id', $courseIds)->where('lessons.status', LessonStatus::Published->value)
+            ->where(fn ($query) => $query->whereNull('lessons.available_at')->orWhere('lessons.available_at', '<=', now()))
+            ->whereNull('course_sections.deleted_at')->get(['lessons.id', 'lessons.course_id']);
         $videos = LessonVideo::query()->whereIn('lesson_id', $lessons->pluck('id'))->where('status', VideoStatus::Ready->value)
             ->where('publication_status', VideoPublicationStatus::Published->value)->get(['id', 'lesson_id', 'processed_storage_key'])
             ->filter(fn (LessonVideo $video) => $video->processed_storage_key && $this->storage->exists($video->processed_storage_key));
@@ -59,6 +62,28 @@ class LearningProgressService
         $complete = $progress->whereNotNull('completed_at')->count() === $videoIds->count();
 
         return ['state' => $complete ? 'completed' : ($progress->where('watched_seconds', '>', 0)->isNotEmpty() ? 'in_progress' : 'not_started'), 'completed' => $complete, 'manual_allowed' => false];
+    }
+
+    public function lessonCompletionMap(User $student, Collection $lessons): array
+    {
+        $lessons = $lessons->unique('id')->values();
+        if ($lessons->isEmpty()) {
+            return [];
+        }
+        $videos = LessonVideo::query()->whereIn('lesson_id', $lessons->pluck('id'))
+            ->where('status', VideoStatus::Ready->value)->where('publication_status', VideoPublicationStatus::Published->value)
+            ->get(['id', 'lesson_id', 'processed_storage_key'])
+            ->filter(fn (LessonVideo $video) => $video->processed_storage_key && $this->storage->exists($video->processed_storage_key));
+        $progress = VideoProgress::where('user_id', $student->id)->whereIn('lesson_video_id', $videos->pluck('id'))
+            ->get(['lesson_video_id', 'completed_at'])->keyBy('lesson_video_id');
+        $manual = LessonManualCompletion::where('user_id', $student->id)->whereIn('lesson_id', $lessons->pluck('id'))->pluck('lesson_id')->flip();
+
+        return $lessons->mapWithKeys(function (Lesson $lesson) use ($videos, $progress, $manual) {
+            $ids = $videos->where('lesson_id', $lesson->id)->pluck('id');
+            $complete = $ids->isEmpty() ? $manual->has($lesson->id) : $ids->every(fn ($id) => $progress->get($id)?->completed_at !== null);
+
+            return [$lesson->id => $complete];
+        })->all();
     }
 
     public function course(User $student, Course $course): array

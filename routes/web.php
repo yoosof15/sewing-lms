@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\CourseSectionController;
 use App\Http\Controllers\LessonAttachmentController;
 use App\Http\Controllers\LessonCompletionController;
 use App\Http\Controllers\LessonController;
@@ -69,6 +70,11 @@ Route::middleware('auth')->group(function () {
             Route::put('courses/{course}/lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
             Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
             Route::post('courses/{course}/lessons/{lesson}/move/{direction}', [LessonController::class, 'move'])->name('lessons.move');
+            Route::post('courses/{course}/sections', [CourseSectionController::class, 'store'])->name('sections.store');
+            Route::put('courses/{course}/sections/{section}', [CourseSectionController::class, 'update'])->name('sections.update');
+            Route::post('courses/{course}/sections/{section}/move/{direction}', [CourseSectionController::class, 'move'])->name('sections.move');
+            Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
+            Route::post('courses/{course}/sections/{section}/restore', [CourseSectionController::class, 'restore'])->name('sections.restore');
         });
         Route::prefix('teacher')->name('teacher.')->middleware('role:TEACHER')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدرس']))->name('dashboard');
@@ -79,6 +85,10 @@ Route::middleware('auth')->group(function () {
             Route::put('courses/{course}/lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
             Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
             Route::post('courses/{course}/lessons/{lesson}/move/{direction}', [LessonController::class, 'move'])->name('lessons.move');
+            Route::post('courses/{course}/sections', [CourseSectionController::class, 'store'])->name('sections.store');
+            Route::put('courses/{course}/sections/{section}', [CourseSectionController::class, 'update'])->name('sections.update');
+            Route::post('courses/{course}/sections/{section}/move/{direction}', [CourseSectionController::class, 'move'])->name('sections.move');
+            Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
         });
         Route::prefix('student')->name('student.')->middleware('role:STUDENT')->group(function () {
             Route::get('/', [StudentCourseController::class, 'index'])->name('dashboard');

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Contracts\VideoStorage;
-use App\Enums\LessonStatus;
 use App\Enums\VideoPublicationStatus;
 use App\Enums\VideoStatus;
 use App\Models\LessonVideo;
@@ -13,14 +12,13 @@ use Illuminate\Support\Facades\Log;
 class VideoPlaybackAccess
 {
     public function __construct(
-        private readonly StudentCourseAccess $courseAccess,
+        private readonly StudentLessonAccess $lessonAccess,
         private readonly VideoStorage $storage,
     ) {}
 
     public function studentCanPlay(User $student, LessonVideo $video): bool
     {
         $lesson = $video->lesson;
-        $course = $lesson?->course;
 
         return $student->hasRole('STUDENT')
             && ! $video->trashed()
@@ -28,10 +26,7 @@ class VideoPlaybackAccess
             && $video->publication_status === VideoPublicationStatus::Published
             && $lesson !== null
             && ! $lesson->trashed()
-            && $lesson->status === LessonStatus::Published
-            && $course !== null
-            && ! $course->trashed()
-            && $this->courseAccess->allows($student, $course)
+            && $this->lessonAccess->allows($student, $lesson)
             && $this->processedAssetExists($video);
     }
 

@@ -2,11 +2,10 @@
 
 namespace App\Policies;
 
-use App\Enums\LessonStatus;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\User;
-use App\Services\StudentCourseAccess;
+use App\Services\StudentLessonAccess;
 
 class LessonPolicy
 {
@@ -26,7 +25,7 @@ class LessonPolicy
             return $lesson->course->teachers()->whereKey($user->id)->exists();
         }
 
-        return $user->hasRole('STUDENT') && $lesson->status === LessonStatus::Published && app(StudentCourseAccess::class)->allows($user, $lesson->course);
+        return $user->hasRole('STUDENT') && app(StudentLessonAccess::class)->allows($user, $lesson);
     }
 
     public function update(User $user, Lesson $lesson): bool

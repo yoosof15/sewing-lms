@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Support\IranianMobile;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 
 class LocalAdminSeeder extends Seeder

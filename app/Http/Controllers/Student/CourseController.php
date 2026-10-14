@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Student;
 
-use App\Enums\LessonStatus;
 use App\Enums\VideoPublicationStatus;
 use App\Enums\VideoStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\VideoProgress;
+use App\Services\CurriculumService;
 use App\Services\LearningProgressService;
 use App\Services\StudentCourseAccess;
+use App\Services\StudentLessonAccess;
 use App\Services\VideoPlaybackAccess;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,12 +31,17 @@ class CourseController extends Controller
         return Inertia::render('Student/Courses/Index', compact('courses'));
     }
 
-    public function show(Course $course, LearningProgressService $progress): Response
+    public function show(Course $course, LearningProgressService $progress, CurriculumService $curriculum, StudentLessonAccess $lessonAccess): Response
     {
         $this->authorize('view', $course);
-        $course->load(['category:id,name', 'teachers:id,first_name,last_name', 'lessons' => fn ($q) => $q->where('status', LessonStatus::Published->value)->orderBy('sort_order')]);
+        $course->load(['category:id,name', 'teachers:id,first_name,last_name']);
+        $course->setRelation('lessons', $curriculum->lessons($course));
         $summary = $progress->course(request()->user(), $course);
-        $course->lessons->each(fn ($lesson) => $lesson->setAttribute('progress_state', $summary['lessons'][$lesson->id] ?? 'not_started'));
+        $decisions = $lessonAccess->decisions(request()->user(), $course->lessons);
+        $course->lessons->each(function ($lesson) use ($summary, $decisions) {
+            $lesson->setAttribute('progress_state', $summary['lessons'][$lesson->id] ?? 'not_started');
+            $lesson->setAttribute('access', $decisions[$lesson->id]);
+        });
 
         return Inertia::render('Student/Courses/Show', compact('course', 'summary'));
     }

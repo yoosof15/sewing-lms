@@ -92,3 +92,9 @@
 - `video:verify-assets` تطابق referenceهای DB با storage و READY بدون processed asset را فقط گزارش می‌کند و فایل ناشناخته‌ای را حذف نمی‌کند.
 - production بر database queue و cron سازگار با cPanel تکیه دارد و Redis/Supervisor را فرض نمی‌کند. Phase 9 باید adapter خارجی را پشت `VideoStorage`/`VideoDelivery` و processor جایگزین‌پذیر اضافه کند.
 - تنظیمات production شامل HTTPS، secure cookie، `APP_DEBUG=false` و عدم نمایش stderr/path/secret است. CSP سخت تا تست سازگاری کامل deferred است.
+
+## Curriculum and centralized access
+
+`Course -> CourseSection (optional) -> Lesson` defines display order. Unsectioned lessons appear first, followed by section order and the existing lesson `sort_order`. Lessons use a many-to-many self-relation through `lesson_prerequisites`; graph traversal rejects cycles before persistence.
+
+Student access flows through `StudentCourseAccess -> StudentLessonAccess -> schedule -> prerequisites -> sequential rule -> Lesson`. `LessonPolicy` and `VideoPlaybackAccess` reuse this boundary, protecting lesson pages, video, progress, attachments, and manual completion. Completion remains owned and batch-loaded by `LearningProgressService`.

@@ -3,10 +3,10 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import VideoUploader from '../../Components/VideoUploader.vue';
 
-const props = defineProps({ course: Object, lesson: Object, statuses: Array, videoConfig: Object });
+const props = defineProps({ course: Object, lesson: Object, statuses: Array, videoConfig: Object, prerequisiteCandidates: Array });
 const role = usePage().props.auth.user.role.toLowerCase();
 const editing = !!props.lesson;
-const form = useForm({ title: props.lesson?.title || '', content: props.lesson?.content || '', status: props.lesson?.status || 'DRAFT' });
+const form = useForm({ title: props.lesson?.title || '', content: props.lesson?.content || '', status: props.lesson?.status || 'DRAFT', section_id: props.lesson?.section_id || '', available_at: props.lesson?.available_at ? props.lesson.available_at.slice(0,16) : '', prerequisite_ids: props.lesson?.prerequisites?.map(item => item.id) || [] });
 const submit = () => editing ? form.put(`/${role}/courses/${props.course.id}/lessons/${props.lesson.id}`) : form.post(`/${role}/courses/${props.course.id}/lessons`);
 const upload = useForm({ attachment: null });
 const format = (bytes) => bytes == null ? '—' : `${(bytes / 1024 / 1024).toFixed(1)} مگابایت`;
@@ -26,6 +26,9 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                     <div><label>عنوان</label><input v-model="form.title"><p class="text-sm text-red-600">{{ form.errors.title }}</p></div>
                     <div><label>محتوای متنی</label><textarea v-model="form.content" rows="12" class="w-full rounded-xl border p-3"></textarea></div>
                     <div><label>وضعیت</label><select v-model="form.status"><option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option></select></div>
+                    <div><label>فصل</label><select v-model="form.section_id"><option value="">بدون فصل</option><option v-for="section in course.sections" :key="section.id" :value="section.id">{{ section.title }}</option></select><p class="text-sm text-red-600">{{ form.errors.section_id }}</p></div>
+                    <div><label>زمان دسترسی</label><input v-model="form.available_at" type="datetime-local"><p class="mt-1 text-xs text-slate-500">زمان بر اساس منطقه زمانی تهران دریافت می‌شود.</p><p class="text-sm text-red-600">{{ form.errors.available_at }}</p></div>
+                    <div><label>پیش‌نیازها</label><div class="max-h-48 space-y-2 overflow-y-auto rounded-xl border p-3"><label v-for="item in prerequisiteCandidates" :key="item.id" class="flex items-center gap-2"><input v-model="form.prerequisite_ids" type="checkbox" :value="item.id" class="h-4 w-4">{{ item.title }}</label><p v-if="!prerequisiteCandidates.length" class="text-sm text-slate-500">درس واجد شرایطی وجود ندارد.</p></div><p class="text-sm text-red-600">{{ form.errors.prerequisite_ids || form.errors['prerequisite_ids.0'] }}</p></div>
                     <div class="flex gap-3"><button :disabled="form.processing" class="rounded-xl bg-teal-700 px-5 py-2.5 text-white disabled:opacity-50">{{ form.processing ? 'در حال ذخیره…' : 'ذخیره' }}</button><Link :href="`/${role}/courses/${course.id}`" class="rounded-xl border px-5 py-2.5">بازگشت</Link></div>
                 </form>
             </section>

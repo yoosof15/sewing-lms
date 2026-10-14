@@ -6,6 +6,7 @@ use App\Enums\LessonStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -14,11 +15,11 @@ class Lesson extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['course_id', 'title', 'content', 'sort_order', 'status', 'published_at', 'created_by'];
+    protected $fillable = ['course_id', 'section_id', 'title', 'content', 'sort_order', 'status', 'published_at', 'available_at', 'created_by'];
 
     protected function casts(): array
     {
-        return ['status' => LessonStatus::class, 'published_at' => 'datetime'];
+        return ['status' => LessonStatus::class, 'published_at' => 'datetime', 'available_at' => 'datetime'];
     }
 
     protected static function booted(): void
@@ -42,6 +43,21 @@ class Lesson extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(CourseSection::class, 'section_id');
+    }
+
+    public function prerequisites(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'lesson_prerequisites', 'lesson_id', 'prerequisite_lesson_id')->withTimestamps();
+    }
+
+    public function dependents(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'lesson_prerequisites', 'prerequisite_lesson_id', 'lesson_id')->withTimestamps();
     }
 
     public function attachments(): HasMany

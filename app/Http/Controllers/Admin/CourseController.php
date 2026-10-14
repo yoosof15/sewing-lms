@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CourseNavigationMode;
 use App\Enums\CourseStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCourseRequest;
@@ -74,6 +75,7 @@ class CourseController extends Controller
     public function update(UpdateCourseRequest $request, Course $course, AuditService $audit): RedirectResponse
     {
         $beforeStatus = $course->status->value;
+        $beforeNavigation = $course->navigation_mode->value;
         $beforeTeachers = $course->teachers()->pluck('users.id')->all();
         $newPath = $request->file('cover_image')?->store('course-covers', 'public');
         $oldPath = $course->cover_image;
@@ -101,6 +103,9 @@ class CourseController extends Controller
         if ($beforeStatus !== $course->status->value) {
             $audit->record('course.status_changed', $course, ['from' => $beforeStatus, 'to' => $course->status->value]);
         }
+        if ($beforeNavigation !== $course->navigation_mode->value) {
+            $audit->record('course.navigation_mode_changed', $course, ['from' => $beforeNavigation, 'to' => $course->navigation_mode->value]);
+        }
         $afterTeachers = $course->teachers()->pluck('users.id')->all();
         foreach (array_diff($afterTeachers, $beforeTeachers) as $id) {
             $audit->record('course.teacher_assigned', $course, ['teacher_id' => $id]);
@@ -114,13 +119,14 @@ class CourseController extends Controller
 
     private function options(): array
     {
-        return ['categories' => CourseCategory::query()->where('is_active', true)->orderBy('sort_order')->get(['id', 'name']), 'teachers' => User::role('TEACHER')->where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']), 'statuses' => collect(CourseStatus::cases())->map(fn ($status) => ['value' => $status->value, 'label' => $status->label()])];
+        return ['categories' => CourseCategory::query()->where('is_active', true)->orderBy('sort_order')->get(['id', 'name']), 'teachers' => User::role('TEACHER')->where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']), 'statuses' => collect(CourseStatus::cases())->map(fn ($status) => ['value' => $status->value, 'label' => $status->label()]), 'navigationModes' => collect(CourseNavigationMode::cases())->map(fn ($mode) => ['value' => $mode->value, 'label' => $mode->label()])];
     }
 
     private function courseData(Course $course): Course
     {
         $course->load(['category:id,name', 'teachers:id,first_name,last_name']);
-        $course->setRelation('lessons', $course->lessons()->withTrashed()->with('creator:id,first_name,last_name')->orderBy('sort_order')->get());
+        $course->setRelation('sections', $course->sections()->withTrashed()->orderBy('sort_order')->get());
+        $course->setRelation('lessons', $course->lessons()->withTrashed()->with(['creator:id,first_name,last_name', 'section' => fn ($q) => $q->withTrashed()])->orderBy('sort_order')->get());
 
         return $course;
     }

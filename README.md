@@ -1,5 +1,11 @@
 # Sewing LMS
 
+## Curriculum access (Phase 9)
+
+Courses may contain ordered sections; existing lessons remain valid without a section and appear before sectioned lessons. A course uses `FREE` or `SEQUENTIAL` navigation. Published lessons may have a Gregorian `available_at` timestamp and same-course prerequisites; self/cross-course links and dependency cycles are rejected.
+
+`StudentLessonAccess` is the authoritative access boundary used by lesson pages, videos, progress, attachments, and manual completion. Decision priority is unavailable parent, schedule, prerequisites, then sequential order. Archived prerequisites remain unsatisfied until restored or explicitly removed. Current progress excludes future scheduled lessons, so its denominator expands when they unlock. `CurriculumDemoSeeder` is local-only and does not overwrite matching records.
+
 سامانه یکپارچه Laravel 12 + Inertia 2 + Vue 3 برای آموزشگاه خیاطی، با رابط فارسی و راست‌به‌چپ.
 
 ## نیازمندی‌ها و راه‌اندازی محلی
