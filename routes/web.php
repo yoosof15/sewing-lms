@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\CourseCategoryController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -29,9 +32,12 @@ Route::middleware('auth')->group(function () {
         Route::prefix('admin')->name('admin.')->middleware('role:ADMIN')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدیر']))->name('dashboard');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
+            Route::resource('categories', CourseCategoryController::class)->except(['show', 'destroy']);
+            Route::resource('courses', AdminCourseController::class)->except(['destroy']);
         });
         Route::prefix('teacher')->name('teacher.')->middleware('role:TEACHER')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدرس']))->name('dashboard');
+            Route::resource('courses', TeacherCourseController::class)->only(['index', 'show']);
         });
         Route::prefix('student')->name('student.')->middleware('role:STUDENT')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد هنرجو']))->name('dashboard');

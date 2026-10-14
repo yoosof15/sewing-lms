@@ -13,6 +13,7 @@ Copy-Item .env.example .env
 php artisan key:generate
 # اتصال MySQL را در .env تنظیم کنید
 php artisan migrate
+php artisan storage:link
 npm.cmd install
 npm.cmd run dev
 php artisan serve
@@ -42,3 +43,13 @@ php artisan test
 ```
 
 سیاست تاریخ/زمان، ذخیره ویدئو و محدودیت‌های cPanel در [docs/architecture.md](docs/architecture.md) ثبت شده است.
+
+## داده نمایشی فاز ۲
+
+برای ایجاد چند دسته‌بندی و دوره نمونه در محیط محلی، بدون ساختن یا بازنویسی کاربران، اجرا کنید:
+
+```powershell
+php artisan db:seed --class=PhaseTwoDemoSeeder
+```
+
+اگر مدرس فعال موجود باشد، دوره‌های نمونه میان همان حساب‌های مدرس توزیع می‌شوند. این seeder در محیط غیر `local` اجرا نمی‌شود.
