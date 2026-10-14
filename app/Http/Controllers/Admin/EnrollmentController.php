@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\NotificationEvents;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class EnrollmentController extends Controller
         return Inertia::render('Admin/Enrollments/Index', compact('course', 'enrollments', 'students', 'search'));
     }
 
-    public function store(StoreEnrollmentRequest $request, Course $course, AuditService $audit): RedirectResponse
+    public function store(StoreEnrollmentRequest $request, Course $course, AuditService $audit, NotificationEvents $notifications): RedirectResponse
     {
         $created = DB::transaction(function () use ($request, $course) {
             $items = collect();
@@ -39,12 +40,15 @@ class EnrollmentController extends Controller
 
             return $items;
         });
-        $created->each(fn ($enrollment) => $audit->record('enrollment.created', $enrollment, ['course_id' => $course->id, 'student_id' => $enrollment->student_id]));
+        $created->each(function ($enrollment) use ($audit, $notifications, $course) {
+            $audit->record('enrollment.created', $enrollment, ['course_id' => $course->id, 'student_id' => $enrollment->student_id]);
+            $notifications->enrollment($enrollment->student, $course, true, $enrollment->id);
+        });
 
         return back()->with('success', 'ثبت‌نام انجام شد.');
     }
 
-    public function update(Request $request, Course $course, CourseEnrollment $enrollment, AuditService $audit): RedirectResponse
+    public function update(Request $request, Course $course, CourseEnrollment $enrollment, AuditService $audit, NotificationEvents $notifications): RedirectResponse
     {
         $this->authorize('update', $course);
         abort_unless($enrollment->course_id === $course->id, 404);
@@ -53,6 +57,9 @@ class EnrollmentController extends Controller
         $enrollment->update($data);
         $action = $beforeStatus !== $enrollment->status ? ($enrollment->status === EnrollmentStatus::Active ? 'enrollment.activated' : 'enrollment.deactivated') : 'enrollment.dates_changed';
         $audit->record($action, $enrollment, ['course_id' => $course->id, 'changed_fields' => array_keys($enrollment->getChanges())]);
+        if ($beforeStatus !== $enrollment->status) {
+            $notifications->enrollment($enrollment->student, $course, $enrollment->status === EnrollmentStatus::Active, $enrollment->id.'-'.$enrollment->updated_at->getTimestamp());
+        }
 
         return back()->with('success', 'دسترسی هنرجو به‌روزرسانی شد.');
     }

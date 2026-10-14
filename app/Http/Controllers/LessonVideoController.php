@@ -9,6 +9,7 @@ use App\Jobs\ProcessLessonVideo;
 use App\Models\Lesson;
 use App\Models\LessonVideo;
 use App\Services\AuditService;
+use App\Services\NotificationEvents;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ use Illuminate\Validation\Rule;
 
 class LessonVideoController extends Controller
 {
-    public function publication(Request $request, Lesson $lesson, LessonVideo $video, VideoStorage $storage, AuditService $audit): RedirectResponse
+    public function publication(Request $request, Lesson $lesson, LessonVideo $video, VideoStorage $storage, AuditService $audit, NotificationEvents $notifications): RedirectResponse
     {
         $this->bound($lesson, $video);
         $this->authorize('update', $video);
@@ -33,6 +34,9 @@ class LessonVideoController extends Controller
             'published_at' => $status === VideoPublicationStatus::Published ? ($video->published_at ?? now()) : null,
         ]);
         $audit->record('video.publication_changed', $video, ['from' => $before, 'to' => $status->value]);
+        if ($before !== VideoPublicationStatus::Published->value && $status === VideoPublicationStatus::Published) {
+            $notifications->video($video->load('lesson.course'));
+        }
 
         return back()->with('success', 'وضعیت انتشار ویدئو به‌روزرسانی شد.');
     }

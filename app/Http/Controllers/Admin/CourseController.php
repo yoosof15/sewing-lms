@@ -11,6 +11,7 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\NotificationEvents;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -34,7 +35,7 @@ class CourseController extends Controller
         return Inertia::render('Admin/Courses/Form', [...$this->options(), 'course' => null]);
     }
 
-    public function store(StoreCourseRequest $request, AuditService $audit): RedirectResponse
+    public function store(StoreCourseRequest $request, AuditService $audit, NotificationEvents $notifications): RedirectResponse
     {
         $path = $request->file('cover_image')?->store('course-covers', 'public');
         try {
@@ -54,6 +55,7 @@ class CourseController extends Controller
             throw $exception;
         }
         $audit->record('course.created', $course, ['status' => $course->status->value]);
+        $course->teachers()->get()->each(fn (User $teacher) => $notifications->teacher($teacher, $course, true));
 
         return redirect()->route('admin.courses.show', $course)->with('success', 'دوره ایجاد شد.');
     }
@@ -72,7 +74,7 @@ class CourseController extends Controller
         return Inertia::render('Admin/Courses/Form', [...$this->options(), 'course' => $this->courseData($course)]);
     }
 
-    public function update(UpdateCourseRequest $request, Course $course, AuditService $audit): RedirectResponse
+    public function update(UpdateCourseRequest $request, Course $course, AuditService $audit, NotificationEvents $notifications): RedirectResponse
     {
         $beforeStatus = $course->status->value;
         $beforeNavigation = $course->navigation_mode->value;
@@ -109,9 +111,15 @@ class CourseController extends Controller
         $afterTeachers = $course->teachers()->pluck('users.id')->all();
         foreach (array_diff($afterTeachers, $beforeTeachers) as $id) {
             $audit->record('course.teacher_assigned', $course, ['teacher_id' => $id]);
+            if ($teacher = User::find($id)) {
+                $notifications->teacher($teacher, $course, true);
+            }
         }
         foreach (array_diff($beforeTeachers, $afterTeachers) as $id) {
             $audit->record('course.teacher_removed', $course, ['teacher_id' => $id]);
+            if ($teacher = User::find($id)) {
+                $notifications->teacher($teacher, $course, false);
+            }
         }
 
         return redirect()->route('admin.courses.show', $course)->with('success', 'دوره به‌روزرسانی شد.');

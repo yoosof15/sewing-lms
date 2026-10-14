@@ -17,6 +17,7 @@ use App\Http\Controllers\LessonAttachmentController;
 use App\Http\Controllers\LessonCompletionController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\LessonVideoController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use App\Http\Controllers\VideoPlaybackController;
@@ -118,5 +119,9 @@ Route::middleware('auth')->group(function () {
             Route::delete('admin/users/{user}/sessions/{token}', [ActiveSessionController::class, 'adminDestroy'])->name('admin.users.sessions.destroy');
         });
         Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::put('notification-preferences', [NotificationController::class, 'preference'])->name('notifications.preference');
     });
 });

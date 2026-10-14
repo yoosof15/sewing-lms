@@ -6,6 +6,12 @@ Courses may contain ordered sections; existing lessons remain valid without a se
 
 `StudentLessonAccess` is the authoritative access boundary used by lesson pages, videos, progress, attachments, and manual completion. Decision priority is unavailable parent, schedule, prerequisites, then sequential order. Archived prerequisites remain unsatisfied until restored or explicitly removed. Current progress excludes future scheduled lessons, so its denominator expands when they unlock. `CurriculumDemoSeeder` is local-only and does not overwrite matching records.
 
+## Internal notifications (Phase 10)
+
+Laravel database notifications provide a private, paginated read/unread center for every role. Event categories are `COURSE_ACCESS`, `NEW_LESSON`, `NEW_VIDEO`, and `TEACHER_ASSIGNMENT`; access and assignment notices are mandatory, while lesson/video notices can be disabled. Delivery uses the database queue and deterministic event/user IDs for retry-safe deduplication.
+
+Run `php artisan notifications:dispatch-due` from cPanel cron every minute to enqueue releases for due scheduled lessons, and run a short-lived database queue worker separately. The scheduler also registers this command every minute. Future mail/SMS/push channels can consume the same domain notification events without changing course or lesson business rules.
+
 سامانه یکپارچه Laravel 12 + Inertia 2 + Vue 3 برای آموزشگاه خیاطی، با رابط فارسی و راست‌به‌چپ.
 
 ## نیازمندی‌ها و راه‌اندازی محلی

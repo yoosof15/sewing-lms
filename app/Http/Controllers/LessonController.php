@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Services\AuditService;
 use App\Services\LessonPrerequisiteService;
+use App\Services\NotificationEvents;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -22,7 +23,7 @@ class LessonController extends Controller
         return Inertia::render('Lessons/Form', $this->formData($course));
     }
 
-    public function store(SaveLessonRequest $request, Course $course, AuditService $audit, LessonPrerequisiteService $prerequisites): RedirectResponse
+    public function store(SaveLessonRequest $request, Course $course, AuditService $audit, LessonPrerequisiteService $prerequisites, NotificationEvents $notifications): RedirectResponse
     {
         $data = $request->validated();
         $candidate = new Lesson(['course_id' => $course->id]);
@@ -40,6 +41,9 @@ class LessonController extends Controller
             return $lesson;
         });
         $audit->record('lesson.created', $lesson, ['course_id' => $course->id, 'status' => $lesson->status->value]);
+        if ($lesson->status === LessonStatus::Published && ! $lesson->available_at?->isFuture()) {
+            $notifications->lesson($lesson->load('course'));
+        }
 
         return redirect()->route($this->prefix($request).'.lessons.edit', [$course, $lesson])->with('success', 'درس ایجاد شد.');
     }
@@ -55,7 +59,7 @@ class LessonController extends Controller
         return Inertia::render('Lessons/Form', array_merge($this->formData($course, $lesson), ['videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]));
     }
 
-    public function update(SaveLessonRequest $request, Course $course, Lesson $lesson, AuditService $audit, LessonPrerequisiteService $prerequisites): RedirectResponse
+    public function update(SaveLessonRequest $request, Course $course, Lesson $lesson, AuditService $audit, LessonPrerequisiteService $prerequisites, NotificationEvents $notifications): RedirectResponse
     {
         $this->bound($course, $lesson);
         $data = $request->validated();
@@ -73,6 +77,9 @@ class LessonController extends Controller
         $audit->record('lesson.updated', $lesson, ['changed_fields' => array_keys($lesson->getChanges())]);
         if ($before !== $lesson->status->value) {
             $audit->record('lesson.status_changed', $lesson, ['from' => $before, 'to' => $lesson->status->value]);
+        }
+        if ($before !== LessonStatus::Published->value && $lesson->status === LessonStatus::Published && ! $lesson->available_at?->isFuture()) {
+            $notifications->lesson($lesson->load('course'));
         }
         if ($oldSection !== $lesson->section_id) {
             $audit->record('lesson.section_changed', $lesson, ['from' => $oldSection, 'to' => $lesson->section_id]);

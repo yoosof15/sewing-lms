@@ -98,3 +98,7 @@
 `Course -> CourseSection (optional) -> Lesson` defines display order. Unsectioned lessons appear first, followed by section order and the existing lesson `sort_order`. Lessons use a many-to-many self-relation through `lesson_prerequisites`; graph traversal rejects cycles before persistence.
 
 Student access flows through `StudentCourseAccess -> StudentLessonAccess -> schedule -> prerequisites -> sequential rule -> Lesson`. `LessonPolicy` and `VideoPlaybackAccess` reuse this boundary, protecting lesson pages, video, progress, attachments, and manual completion. Completion remains owned and batch-loaded by `LearningProgressService`.
+
+## Internal notification flow
+
+Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Laravel `Notification` -> database channel. Course recipients are processed in chunks and every recipient/event pair has a deterministic UUID, making queue and cron retries idempotent. A future channel layer may fan the same event out to database + email + SMS + push without placing provider logic in controllers.
