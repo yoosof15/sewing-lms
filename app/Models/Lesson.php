@@ -48,4 +48,9 @@ class Lesson extends Model
     {
         return $this->hasMany(LessonAttachment::class);
     }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(LessonVideo::class)->orderBy('sort_order');
+    }
 }

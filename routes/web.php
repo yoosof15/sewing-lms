@@ -9,8 +9,10 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\LessonAttachmentController;
 use App\Http\Controllers\LessonController;
+use App\Http\Controllers\LessonVideoController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
+use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -66,5 +68,12 @@ Route::middleware('auth')->group(function () {
         });
         Route::post('lessons/{lesson}/attachments', [LessonAttachmentController::class, 'store'])->name('attachments.store');
         Route::get('attachments/{attachment}/download', [LessonAttachmentController::class, 'download'])->name('attachments.download');
+        Route::post('lessons/{lesson}/video-uploads', [VideoUploadController::class, 'initiate'])->name('video-uploads.initiate');
+        Route::get('video-uploads/{uploadSession}', [VideoUploadController::class, 'show'])->name('video-uploads.show');
+        Route::patch('video-uploads/{uploadSession}/chunk', [VideoUploadController::class, 'chunk'])->name('video-uploads.chunk');
+        Route::post('video-uploads/{uploadSession}/finalize', [VideoUploadController::class, 'finalize'])->name('video-uploads.finalize');
+        Route::delete('video-uploads/{uploadSession}', [VideoUploadController::class, 'cancel'])->name('video-uploads.cancel');
+        Route::post('lessons/{lesson}/videos/{video}/move/{direction}', [LessonVideoController::class, 'move'])->name('videos.move');
+        Route::delete('lessons/{lesson}/videos/{video}', [LessonVideoController::class, 'destroy'])->name('videos.destroy');
     });
 });
