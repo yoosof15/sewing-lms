@@ -12,6 +12,7 @@ use App\Models\CourseCategory;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\NotificationEvents;
+use App\Services\SystemSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -127,7 +128,9 @@ class CourseController extends Controller
 
     private function options(): array
     {
-        return ['categories' => CourseCategory::query()->where('is_active', true)->orderBy('sort_order')->get(['id', 'name']), 'teachers' => User::role('TEACHER')->where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']), 'statuses' => collect(CourseStatus::cases())->map(fn ($status) => ['value' => $status->value, 'label' => $status->label()]), 'navigationModes' => collect(CourseNavigationMode::cases())->map(fn ($mode) => ['value' => $mode->value, 'label' => $mode->label()])];
+        $settings = app(SystemSettings::class);
+
+        return ['categories' => CourseCategory::query()->where('is_active', true)->orderBy('sort_order')->get(['id', 'name']), 'teachers' => User::role('TEACHER')->where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']), 'statuses' => collect(CourseStatus::cases())->map(fn ($status) => ['value' => $status->value, 'label' => $status->label()]), 'navigationModes' => collect(CourseNavigationMode::cases())->map(fn ($mode) => ['value' => $mode->value, 'label' => $mode->label()]), 'courseDefaults' => ['navigation_mode' => $settings->string('default_navigation_mode'), 'completion_threshold_percent' => $settings->integer('default_completion_threshold_percent')]];
     }
 
     private function courseData(Course $course): Course

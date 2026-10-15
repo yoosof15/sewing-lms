@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'institute_name' => ['group' => 'general', 'type' => 'string', 'default' => 'آموزشگاه خیاطی', 'rules' => ['required', 'string', 'max:120'], 'label' => 'نام آموزشگاه', 'description' => 'نامی که در سربرگ و صفحه ورود نمایش داده می‌شود.'],
+    'site_short_title' => ['group' => 'general', 'type' => 'string', 'default' => 'سامانه مدیریت آموزش', 'rules' => ['required', 'string', 'max:80'], 'label' => 'عنوان کوتاه سامانه', 'description' => 'عنوان کوتاه زیر نام آموزشگاه.'],
+    'support_phone' => ['group' => 'general', 'type' => 'string', 'default' => null, 'rules' => ['nullable', 'string', 'max:30'], 'label' => 'تلفن پشتیبانی', 'description' => 'شماره تماس اختیاری پشتیبانی.'],
+    'support_email' => ['group' => 'general', 'type' => 'string', 'default' => null, 'rules' => ['nullable', 'email', 'max:180'], 'label' => 'ایمیل پشتیبانی', 'description' => 'ایمیل عمومی پشتیبانی.'],
+    'institute_address' => ['group' => 'general', 'type' => 'string', 'default' => null, 'rules' => ['nullable', 'string', 'max:500'], 'label' => 'نشانی آموزشگاه', 'description' => 'نشانی متنی؛ HTML پذیرفته نمی‌شود.'],
+    'footer_text' => ['group' => 'general', 'type' => 'string', 'default' => null, 'rules' => ['nullable', 'string', 'max:300'], 'label' => 'متن پاورقی', 'description' => 'متن ساده پایین صفحات.'],
+    'branding_logo_path' => ['group' => 'branding', 'type' => 'string', 'default' => null, 'rules' => ['nullable', 'string', 'max:255'], 'label' => 'لوگوی آموزشگاه', 'description' => 'تصویر عمومی امن برند.'],
+    'default_completion_threshold_percent' => ['group' => 'learning', 'type' => 'integer', 'default' => 80, 'rules' => ['required', 'integer', 'between:1,100'], 'label' => 'درصد پیش‌فرض تکمیل دوره', 'description' => 'فقط برای دوره‌های جدید.'],
+    'default_navigation_mode' => ['group' => 'learning', 'type' => 'string', 'default' => 'FREE', 'rules' => ['required', 'in:FREE,SEQUENTIAL'], 'label' => 'حالت پیش‌فرض پیمایش', 'description' => 'فقط برای دوره‌های جدید.'],
+    'watermark_enabled' => ['group' => 'video', 'type' => 'boolean', 'default' => (bool) env('VIDEO_WATERMARK_ENABLED', true), 'rules' => ['required', 'boolean'], 'label' => 'نمایش واترمارک هنرجو', 'description' => 'نام و موبایل ماسک‌شده روی ویدیو.'],
+    'watermark_move_seconds' => ['group' => 'video', 'type' => 'integer', 'default' => (int) env('VIDEO_WATERMARK_MOVE_SECONDS', 30), 'rules' => ['required', 'integer', 'between:20,120'], 'label' => 'فاصله حرکت واترمارک', 'description' => 'بین ۲۰ تا ۱۲۰ ثانیه.'],
+    'video_max_upload_mb' => ['group' => 'video', 'type' => 'integer', 'default' => (int) env('VIDEO_MAX_UPLOAD_MB', 10240), 'rules' => ['required', 'integer', 'min:1', 'max:'.(int) env('VIDEO_MAX_UPLOAD_MB', 10240)], 'label' => 'سقف تجاری آپلود ویدیو', 'description' => 'از سقف زیرساخت بیشتر نمی‌شود.'],
+    'max_active_sessions' => ['group' => 'sessions', 'type' => 'integer', 'default' => (int) env('AUTH_MAX_ACTIVE_SESSIONS', 2), 'rules' => ['required', 'integer', 'min:0', 'max:100'], 'label' => 'حداکثر نشست هم‌زمان', 'description' => 'صفر یعنی بدون محدودیت؛ نشست‌های فعلی خودکار قطع نمی‌شوند.'],
+    'assignment_max_files' => ['group' => 'assignments', 'type' => 'integer', 'default' => (int) env('ASSIGNMENT_MAX_FILES', 5), 'rules' => ['required', 'integer', 'between:1,10'], 'label' => 'حداکثر فایل هر تکلیف', 'description' => 'حداکثر تعداد فایل در هر تلاش.'],
+    'assignment_max_file_mb' => ['group' => 'assignments', 'type' => 'integer', 'default' => (int) ceil((int) env('ASSIGNMENT_MAX_FILE_KB', 10240) / 1024), 'rules' => ['required', 'integer', 'min:1', 'max:'.(int) ceil((int) env('ASSIGNMENT_MAX_FILE_KB', 10240) / 1024)], 'label' => 'حجم هر فایل تکلیف', 'description' => 'مگابایت؛ سقف سخت config همچنان اعمال می‌شود.'],
+    'qa_max_images' => ['group' => 'qa', 'type' => 'integer', 'default' => 3, 'rules' => ['required', 'integer', 'between:1,3'], 'label' => 'حداکثر تصویر پرسش', 'description' => 'حداکثر تعداد تصویر هر پیام.'],
+    'qa_max_image_mb' => ['group' => 'qa', 'type' => 'integer', 'default' => 5, 'rules' => ['required', 'integer', 'between:1,5'], 'label' => 'حجم هر تصویر پرسش', 'description' => 'مگابایت؛ MIME امن همچنان اجباری است.'],
+    'lesson_qa_enabled' => ['group' => 'qa', 'type' => 'boolean', 'default' => true, 'rules' => ['required', 'boolean'], 'label' => 'ثبت پرسش جدید', 'description' => 'با خاموش‌کردن، تاریخچه خواندنی می‌ماند.'],
+    'default_notify_new_lesson' => ['group' => 'notifications', 'type' => 'boolean', 'default' => true, 'rules' => ['required', 'boolean'], 'label' => 'اعلان پیش‌فرض درس جدید', 'description' => 'فقط برای کاربرانی که انتخاب صریح ندارند.'],
+    'default_notify_new_video' => ['group' => 'notifications', 'type' => 'boolean', 'default' => true, 'rules' => ['required', 'boolean'], 'label' => 'اعلان پیش‌فرض ویدیوی جدید', 'description' => 'انتخاب موجود کاربر تغییر نمی‌کند.'],
+    'default_notify_assignment' => ['group' => 'notifications', 'type' => 'boolean', 'default' => true, 'rules' => ['required', 'boolean'], 'label' => 'اعلان پیش‌فرض تکلیف', 'description' => 'انتخاب موجود کاربر تغییر نمی‌کند.'],
+    'default_notify_lesson_qa' => ['group' => 'notifications', 'type' => 'boolean', 'default' => true, 'rules' => ['required', 'boolean'], 'label' => 'اعلان پیش‌فرض پرسش و پاسخ', 'description' => 'انتخاب موجود کاربر تغییر نمی‌کند.'],
+];

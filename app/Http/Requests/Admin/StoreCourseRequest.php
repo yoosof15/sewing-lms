@@ -6,6 +6,7 @@ use App\Enums\CourseNavigationMode;
 use App\Enums\CourseStatus;
 use App\Models\Course;
 use App\Models\User;
+use App\Services\SystemSettings;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -19,7 +20,8 @@ class StoreCourseRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['category_id' => $this->input('category_id') ?: null, 'teacher_ids' => $this->input('teacher_ids', [])]);
+        $settings = app(SystemSettings::class);
+        $this->merge(['category_id' => $this->input('category_id') ?: null, 'teacher_ids' => $this->input('teacher_ids', []), 'navigation_mode' => $this->input('navigation_mode', $settings->string('default_navigation_mode')), 'completion_threshold_percent' => $this->input('completion_threshold_percent', $settings->integer('default_completion_threshold_percent'))]);
     }
 
     public function rules(): array

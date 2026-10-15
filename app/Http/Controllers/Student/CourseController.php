@@ -12,6 +12,7 @@ use App\Services\CurriculumService;
 use App\Services\LearningProgressService;
 use App\Services\StudentCourseAccess;
 use App\Services\StudentLessonAccess;
+use App\Services\SystemSettings;
 use App\Services\VideoPlaybackAccess;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -46,7 +47,7 @@ class CourseController extends Controller
         return Inertia::render('Student/Courses/Show', compact('course', 'summary'));
     }
 
-    public function lesson(Course $course, Lesson $lesson, VideoPlaybackAccess $playbackAccess, LearningProgressService $learning): Response
+    public function lesson(Course $course, Lesson $lesson, VideoPlaybackAccess $playbackAccess, LearningProgressService $learning, SystemSettings $settings): Response
     {
         abort_unless($lesson->course_id === $course->id, 404);
         $this->authorize('view', $lesson);
@@ -74,7 +75,7 @@ class CourseController extends Controller
         $user = request()->user();
         $localMobile = str_starts_with((string) $user->mobile, '+98') ? '0'.substr($user->mobile, 3) : (string) $user->mobile;
         $masked = strlen($localMobile) >= 8 ? substr($localMobile, 0, 4).'***'.substr($localMobile, -4) : 'شماره محفوظ';
-        $watermark = ['enabled' => (bool) config('learning.watermark_enabled'), 'text' => trim($user->first_name.' '.$user->last_name), 'mobile' => $masked, 'move_seconds' => (int) config('learning.watermark_move_seconds')];
+        $watermark = ['enabled' => $settings->boolean('watermark_enabled'), 'text' => trim($user->first_name.' '.$user->last_name), 'mobile' => $masked, 'move_seconds' => $settings->integer('watermark_move_seconds')];
         $progressConfig = ['heartbeat_seconds' => (int) config('learning.progress_heartbeat_seconds')];
 
         return Inertia::render('Student/Lessons/Show', compact('course', 'lesson', 'videos', 'lessonProgress', 'watermark', 'progressConfig'));

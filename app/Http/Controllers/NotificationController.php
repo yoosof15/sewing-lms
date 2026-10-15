@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\NotificationCategory;
 use App\Models\NotificationPreference;
+use App\Services\SystemSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,10 +12,15 @@ use Inertia\Response;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, SystemSettings $settings): Response
     {
         $items = $request->user()->notifications()->latest()->paginate(15);
-        $preferences = collect(NotificationCategory::cases())->reject->mandatory()->map(fn ($category) => ['category' => $category->value, 'label' => $category->label(), 'enabled' => ! NotificationPreference::where('user_id', $request->user()->id)->where('category', $category->value)->where('enabled', false)->exists()])->values();
+        $preferences = collect(NotificationCategory::cases())->reject->mandatory()->map(function ($category) use ($request, $settings) {
+            $explicit = NotificationPreference::where('user_id', $request->user()->id)->where('category', $category->value)->first();
+            $defaultKey = ['NEW_LESSON' => 'default_notify_new_lesson', 'NEW_VIDEO' => 'default_notify_new_video', 'ASSIGNMENT' => 'default_notify_assignment', 'LESSON_QA' => 'default_notify_lesson_qa'][$category->value];
+
+            return ['category' => $category->value, 'label' => $category->label(), 'enabled' => $explicit?->enabled ?? $settings->boolean($defaultKey)];
+        })->values();
 
         return Inertia::render('Notifications/Index', ['notifications' => $items, 'preferences' => $preferences]);
     }

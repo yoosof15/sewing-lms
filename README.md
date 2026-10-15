@@ -219,6 +219,16 @@ php artisan db:seed --class=AssignmentDemoSeeder
 
 چک دستی: ساخت و انتشار تکلیف، مشاهده در صفحه درس هنرجو، ارسال متن/فایل، بررسی در صندوق تکالیف، ثبت بازخورد، ارسال مجدد پس از درخواست اصلاح، کنترل دانلود فایل با کاربر دیگر و اجرای دوباره فرمان اعلان را بررسی کنید.
 
+## System settings and branding (Phase 14)
+
+Admins manage product settings at `/admin/settings`. Supported keys are declared in `config/system_settings.php`; the browser cannot create arbitrary keys. `SystemSettings` resolves a validated database override first and otherwise uses the code/config default. Overrides are cached as one map and every update or group reset invalidates that cache immediately.
+
+The page covers institute text and logo, defaults for new Courses, watermark behavior, future-login session policy, video/Assignment/Q&A business limits, Q&A availability, and notification defaults. Existing Course values and explicit User notification preferences remain authoritative. Turning Q&A off preserves readable history while preventing new Student questions and replies.
+
+Upload controls use two layers: server/config values are hard safety maxima and Admin values are lower business limits. The effective value is always the smaller value. Raising a setting does not change PHP `upload_max_filesize`, `post_max_size`, Apache/Nginx limits, storage capacity, or external-host policy.
+
+System Settings is not a secrets store. `APP_KEY`, database/mail/storage credentials, API keys, FFmpeg paths, filesystem paths, Git credentials, and similar infrastructure values remain in environment/server configuration and are never exposed by this UI.
+
 ## گزارش‌های پیشرفت و عملکرد (فاز ۱۳)
 
 مدیر از منوی «گزارش‌ها» همه دوره‌ها و مدرس فقط دوره‌های تخصیص‌یافته را می‌بیند. گزارش دوره شامل میانگین پیشرفت ثبت‌نام‌های فعال و جاری، وضعیت هر هنرجو، درس‌های تکمیل‌شده، خلاصه تکلیف و پرسش، آخرین فعالیت آموزشی و CSV دارای UTF-8 BOM است. موبایل در UI و CSV ماسک می‌شود.

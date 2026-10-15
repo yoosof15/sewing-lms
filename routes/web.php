@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PurgeController;
+use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AssignmentSubmissionController;
@@ -54,6 +55,10 @@ Route::middleware('auth')->group(function () {
             Route::get('reports/courses/{course}', [LearningReportController::class, 'course'])->name('reports.courses.show');
             Route::get('reports/courses/{course}/export', [LearningReportController::class, 'export'])->name('reports.courses.export');
             Route::get('reports/students/{student}', [LearningReportController::class, 'student'])->name('reports.students.show');
+            Route::get('settings', [SystemSettingsController::class, 'index'])->name('settings.index');
+            Route::put('settings/{group}', [SystemSettingsController::class, 'update'])->name('settings.update');
+            Route::delete('settings/{group}', [SystemSettingsController::class, 'reset'])->name('settings.reset');
+            Route::post('settings/branding/logo', [SystemSettingsController::class, 'logo'])->name('settings.logo');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::resource('categories', CourseCategoryController::class)->except(['show', 'destroy']);
             Route::resource('courses', AdminCourseController::class)->except(['destroy']);

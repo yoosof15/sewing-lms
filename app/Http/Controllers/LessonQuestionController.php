@@ -10,6 +10,7 @@ use App\Models\LessonQuestionAttachment;
 use App\Services\AuditService;
 use App\Services\NotificationEvents;
 use App\Services\StudentLessonAccess;
+use App\Services\SystemSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,11 +34,12 @@ class LessonQuestionController extends Controller
         return Inertia::render('Questions/Index', ['questions' => $query->paginate(15)->withQueryString(), 'courses' => $courses, 'filters' => $request->only('status', 'course_id'), 'statuses' => $this->statuses()]);
     }
 
-    public function store(Request $request, Course $course, Lesson $lesson, StudentLessonAccess $access, NotificationEvents $events): RedirectResponse
+    public function store(Request $request, Course $course, Lesson $lesson, StudentLessonAccess $access, NotificationEvents $events, SystemSettings $settings): RedirectResponse
     {
         abort_unless($lesson->course_id === $course->id, 404);
         abort_unless($request->user()->hasRole('STUDENT') && $access->allows($request->user(), $lesson), 403);
-        $data = $request->validate(['subject' => ['nullable', 'string', 'max:180'], 'body' => ['required', 'string', 'min:5', 'max:5000'], 'images' => ['nullable', 'array', 'max:3'], 'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
+        abort_unless($settings->boolean('lesson_qa_enabled'), 403);
+        $data = $request->validate(['subject' => ['nullable', 'string', 'max:180'], 'body' => ['required', 'string', 'min:5', 'max:5000'], 'images' => ['nullable', 'array', 'max:'.$settings->qaMaxImages()], 'images.*' => ['file', 'image', 'mimes:'.implode(',', config('q_and_a.allowed_mimes')), 'max:'.$settings->qaMaxImageKb()]]);
         $question = DB::transaction(function () use ($request, $lesson, $data) {
             $q = $lesson->questions()->create(['student_id' => $request->user()->id, 'subject' => $data['subject'] ?? null, 'body' => $data['body'], 'status' => LessonQuestionStatus::Open, 'last_activity_at' => now()]);
             $this->storeFiles($request, $q, null);
@@ -57,10 +59,11 @@ class LessonQuestionController extends Controller
         return Inertia::render('Questions/Show', ['question' => $question, 'canManage' => $request->user()->can('manage', $question), 'statuses' => $this->statuses()]);
     }
 
-    public function reply(Request $request, LessonQuestion $question, NotificationEvents $events): RedirectResponse
+    public function reply(Request $request, LessonQuestion $question, NotificationEvents $events, SystemSettings $settings): RedirectResponse
     {
         $this->authorize('reply', $question);
-        $data = $request->validate(['body' => ['required', 'string', 'min:2', 'max:5000'], 'images' => ['nullable', 'array', 'max:3'], 'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
+        abort_if($request->user()->hasRole('STUDENT') && ! $settings->boolean('lesson_qa_enabled'), 403);
+        $data = $request->validate(['body' => ['required', 'string', 'min:2', 'max:5000'], 'images' => ['nullable', 'array', 'max:'.$settings->qaMaxImages()], 'images.*' => ['file', 'image', 'mimes:'.implode(',', config('q_and_a.allowed_mimes')), 'max:'.$settings->qaMaxImageKb()]]);
         $staff = $request->user()->hasAnyRole(['ADMIN', 'TEACHER']);
         $reply = DB::transaction(function () use ($request, $question, $data, $staff) {
             $r = $question->replies()->create(['user_id' => $request->user()->id, 'body' => $data['body'], 'is_staff' => $staff]);

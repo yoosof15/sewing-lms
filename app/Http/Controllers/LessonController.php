@@ -9,6 +9,7 @@ use App\Models\Lesson;
 use App\Services\AuditService;
 use App\Services\LessonPrerequisiteService;
 use App\Services\NotificationEvents;
+use App\Services\SystemSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -48,7 +49,7 @@ class LessonController extends Controller
         return redirect()->route($this->prefix($request).'.lessons.edit', [$course, $lesson])->with('success', 'درس ایجاد شد.');
     }
 
-    public function edit(Course $course, Lesson $lesson): Response
+    public function edit(Course $course, Lesson $lesson, SystemSettings $settings): Response
     {
         $this->bound($course, $lesson);
         $this->authorize('update', $lesson);
@@ -57,7 +58,7 @@ class LessonController extends Controller
         $lesson->setRelation('videos', $lesson->videos()->withTrashed()->with('uploader:id,first_name,last_name')->orderBy('sort_order')->get());
         $lesson->setRelation('assignments', $lesson->assignments()->withTrashed()->orderBy('created_at')->get());
 
-        return Inertia::render('Lessons/Form', array_merge($this->formData($course, $lesson), ['videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]));
+        return Inertia::render('Lessons/Form', array_merge($this->formData($course, $lesson), ['videoConfig' => ['maxBytes' => $settings->videoMaxUploadMb() * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]));
     }
 
     public function update(SaveLessonRequest $request, Course $course, Lesson $lesson, AuditService $audit, LessonPrerequisiteService $prerequisites, NotificationEvents $notifications): RedirectResponse

@@ -107,6 +107,14 @@ Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Larave
 
 `Student -> StudentLessonAccess -> LessonQuestion -> linear LessonQuestionReply -> NotificationEvents -> Teacher/Student notification`. Threads belong to one student and remain private. Assigned course teachers may answer regardless of lesson ownership; an unassigned teacher and other students cannot view the thread. Images use private local storage and an authorized download endpoint.
 
+## System settings boundary (Phase 14)
+
+The resolution path is `config/.env hard maximum or fallback -> SystemSettings definition -> validated system_settings override -> effective domain value`. Definitions own the type, group, default, validation rules, Persian label, description, and bounds. One cached override map prevents a query per key; writes and resets invalidate it immediately.
+
+Controllers and domain services consume typed accessors instead of querying `system_settings` directly. New Course defaults, watermark props, future-login session checks, upload validation, and notification opt-in fallback all pass through this boundary. Per-Course values and explicit per-User preferences remain separate sources of truth.
+
+For video, Assignment, and Q&A uploads, an Admin business limit can only reduce the configured infrastructure limit: `effective = min(hard, business)`. Settings contain product values only. Secrets, credentials, executable paths, server paths, codecs, processing commands, and encryption material are deliberately outside this model.
+
 ## Reporting boundaries (Phase 13)
 
 Learning reports are derived, authorized views and do not own learning-progress truth. `LearningProgressService` defines the Course denominator and completion semantics; its batch API loads curriculum, video progress and manual completions in bounded bulk queries. `StudentLessonAccess` remains authoritative for scheduled, prerequisite and sequential locks. Assignment and Q&A aggregates come from their respective domains.

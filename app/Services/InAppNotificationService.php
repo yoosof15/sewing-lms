@@ -10,9 +10,19 @@ use Illuminate\Database\QueryException;
 
 class InAppNotificationService
 {
+    public function __construct(private readonly SystemSettings $settings) {}
+
     public function send(User $user, string $eventKey, NotificationCategory $category, array $payload): void
     {
-        if (! $user->is_active || (! $category->mandatory() && NotificationPreference::where('user_id', $user->id)->where('category', $category->value)->where('enabled', false)->exists())) {
+        $preference = NotificationPreference::where('user_id', $user->id)->where('category', $category->value)->first();
+        $default = match ($category) {
+            NotificationCategory::NewLesson => $this->settings->boolean('default_notify_new_lesson'),
+            NotificationCategory::NewVideo => $this->settings->boolean('default_notify_new_video'),
+            NotificationCategory::Assignment => $this->settings->boolean('default_notify_assignment'),
+            NotificationCategory::LessonQa => $this->settings->boolean('default_notify_lesson_qa'),
+            default => true,
+        };
+        if (! $user->is_active || (! $category->mandatory() && ! ($preference?->enabled ?? $default))) {
             return;
         }
         $hash = md5($eventKey.':'.$user->id);

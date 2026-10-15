@@ -10,6 +10,7 @@ use App\Services\AuditService;
 use App\Services\NotificationEvents;
 use App\Services\StudentAssignmentAccess;
 use App\Services\SubmissionReviewService;
+use App\Services\SystemSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentSubmissionController extends Controller
 {
-    public function assignment(Request $r, LessonAssignment $a, StudentAssignmentAccess $access): Response
+    public function assignment(Request $r, LessonAssignment $a, StudentAssignmentAccess $access, SystemSettings $settings): Response
     {
         abort_unless($access->allows($r->user(), $a), 403);
         $a->load(['lesson.course', 'submissions' => fn ($q) => $q->where('student_id', $r->user()->id)->with('files')->orderBy('attempt_number')]);
@@ -29,7 +30,7 @@ class AssignmentSubmissionController extends Controller
         $canSubmit = $access->allows($r->user(), $a, true) && (! $last || ($a->allow_resubmission && in_array($last->status, [SubmissionStatus::RevisionRequested, SubmissionStatus::Rejected], true) && (! $a->max_attempts || $last->attempt_number < $a->max_attempts)));
         $reason = $canSubmit ? null : ($a->due_at?->isPast() && ! $a->allow_late_submission ? 'مهلت ارسال گذشته است.' : ($last && ! $a->allow_resubmission ? 'ارسال مجدد برای این تکلیف مجاز نیست.' : 'در حال حاضر امکان ارسال تلاش جدید وجود ندارد.'));
 
-        return Inertia::render('Student/Assignments/Show', ['assignment' => $a, 'canSubmit' => $canSubmit, 'blockedReason' => $reason, 'fileConfig' => config('assignments')]);
+        return Inertia::render('Student/Assignments/Show', ['assignment' => $a, 'canSubmit' => $canSubmit, 'blockedReason' => $reason, 'fileConfig' => ['max_files' => $settings->assignmentMaxFiles(), 'max_file_kb' => $settings->assignmentMaxFileKb(), 'allowed_mimes' => config('assignments.allowed_mimes')]]);
     }
 
     public function index(Request $r): Response
@@ -43,10 +44,10 @@ class AssignmentSubmissionController extends Controller
         return Inertia::render('Submissions/Index', ['submissions' => $q->paginate(15)->withQueryString(), 'statuses' => $this->statuses(), 'filters' => $r->only('status', 'late')]);
     }
 
-    public function store(Request $r, LessonAssignment $a, StudentAssignmentAccess $access, NotificationEvents $events): RedirectResponse
+    public function store(Request $r, LessonAssignment $a, StudentAssignmentAccess $access, NotificationEvents $events, SystemSettings $settings): RedirectResponse
     {
         abort_unless($access->allows($r->user(), $a, true), 403);
-        $d = $r->validate(['text_content' => ['nullable', 'string', 'max:20000'], 'files' => ['nullable', 'array', 'max:'.config('assignments.max_files')], 'files.*' => ['file', 'mimes:'.implode(',', config('assignments.allowed_mimes')), 'max:'.config('assignments.max_file_kb')]]);
+        $d = $r->validate(['text_content' => ['nullable', 'string', 'max:20000'], 'files' => ['nullable', 'array', 'max:'.$settings->assignmentMaxFiles()], 'files.*' => ['file', 'mimes:'.implode(',', config('assignments.allowed_mimes')), 'max:'.$settings->assignmentMaxFileKb()]]);
         abort_if(blank($d['text_content'] ?? null) && empty($r->file('files')), 422, 'متن یا فایل لازم است.');
         $last = $a->submissions()->where('student_id', $r->user()->id)->latest('attempt_number')->first();
         abort_if($last && ! $a->allow_resubmission, 409, 'ارسال مجدد مجاز نیست.');

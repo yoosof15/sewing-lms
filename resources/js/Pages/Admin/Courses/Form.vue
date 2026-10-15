@@ -2,9 +2,9 @@
 import { computed, ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '../../../Layouts/AppLayout.vue';
-const props = defineProps({ course:Object, categories:Array, teachers:Array, statuses:Array, navigationModes:Array });
+const props = defineProps({ course:Object, categories:Array, teachers:Array, statuses:Array, navigationModes:Array, courseDefaults:Object });
 const editing = !!props.course; const search = ref('');
-const form = useForm({ title:props.course?.title||'', category_id:props.course?.category_id||'', short_description:props.course?.short_description||'', description:props.course?.description||'', status:props.course?.status||'DRAFT', navigation_mode:props.course?.navigation_mode||'FREE', completion_threshold_percent:props.course?.completion_threshold_percent||80, teacher_ids:props.course?.teachers?.map(t=>t.id)||[], cover_image:null });
+const form = useForm({ title:props.course?.title||'', category_id:props.course?.category_id||'', short_description:props.course?.short_description||'', description:props.course?.description||'', status:props.course?.status||'DRAFT', navigation_mode:props.course?.navigation_mode||props.courseDefaults?.navigation_mode||'FREE', completion_threshold_percent:props.course?.completion_threshold_percent||props.courseDefaults?.completion_threshold_percent||80, teacher_ids:props.course?.teachers?.map(t=>t.id)||[], cover_image:null });
 const filtered = computed(() => { const q=search.value.trim().toLowerCase(); return q ? props.teachers.filter(t=>`${t.first_name} ${t.last_name}`.toLowerCase().includes(q)) : props.teachers; });
 const submit = () => editing ? form.transform(data=>({...data,_method:'put'})).post(`/admin/courses/${props.course.id}`) : form.post('/admin/courses');
 </script>

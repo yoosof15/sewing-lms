@@ -2,6 +2,14 @@
 
 این سند برای فاز استقرار آینده است و هیچ storage خارجی را فعال نمی‌کند.
 
+## Production boundary for System Settings
+
+- Back up `system_settings` with the application database and ensure the database cache table is operational.
+- Admin upload values are business limits only. Confirm PHP, web-server, cPanel, temporary-space, and external-storage hard limits independently before increasing them.
+- Run `php artisan storage:link` for the public branding logo; private lesson, Q&A, Assignment, and video assets must not be linked publicly.
+- Never place `APP_KEY`, database credentials, mail credentials, storage credentials, API secrets, Git credentials, certificates, FFmpeg paths, processor commands, or server filesystem paths in System Settings. They remain in `.env`, Laravel config, or protected hosting configuration.
+- After deployment, verify an Admin update is immediately visible, a reset restores the code fallback, Teacher/Student access is denied, and audit records contain only safe product values.
+
 ## میزبان و PHP
 
 - PHP 8.2 یا جدیدتر و extensionهای موردنیاز Laravel، MySQL، fileinfo و mbstring فراهم باشد.
