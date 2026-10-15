@@ -14,6 +14,7 @@ use App\Services\StudentCourseAccess;
 use App\Services\StudentLessonAccess;
 use App\Services\SystemSettings;
 use App\Services\VideoPlaybackAccess;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,7 +36,7 @@ class CourseController extends Controller
     public function show(Course $course, LearningProgressService $progress, CurriculumService $curriculum, StudentLessonAccess $lessonAccess): Response
     {
         $this->authorize('view', $course);
-        $course->load(['category:id,name', 'teachers:id,first_name,last_name']);
+        $course->load(['category:id,name', 'teachers' => fn ($query) => $query->select('users.id', 'first_name', 'last_name')->with('profile:user_id,avatar_path,bio,teacher_specialty')]);
         $course->setRelation('lessons', $curriculum->lessons($course));
         $summary = $progress->course(request()->user(), $course);
         $decisions = $lessonAccess->decisions(request()->user(), $course->lessons);
@@ -44,7 +45,14 @@ class CourseController extends Controller
             $lesson->setAttribute('access', $decisions[$lesson->id]);
         });
 
-        return Inertia::render('Student/Courses/Show', compact('course', 'summary'));
+        $teacherProfiles = $course->teachers->map(fn ($teacher) => [
+            'id' => $teacher->id, 'name' => $teacher->name,
+            'avatar_url' => $teacher->profile?->avatar_path ? Storage::disk('public')->url($teacher->profile->avatar_path) : null,
+            'specialty' => $teacher->profile?->teacher_specialty, 'bio' => $teacher->profile?->bio,
+        ]);
+        $course->unsetRelation('teachers');
+
+        return Inertia::render('Student/Courses/Show', compact('course', 'summary', 'teacherProfiles'));
     }
 
     public function lesson(Course $course, Lesson $lesson, VideoPlaybackAccess $playbackAccess, LearningProgressService $learning, SystemSettings $settings): Response

@@ -23,6 +23,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\LessonQuestionController;
 use App\Http\Controllers\LessonVideoController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Teacher\CourseController as TeacherCourseController;
 use App\Http\Controllers\VideoPlaybackController;
@@ -59,7 +60,7 @@ Route::middleware('auth')->group(function () {
             Route::put('settings/{group}', [SystemSettingsController::class, 'update'])->name('settings.update');
             Route::delete('settings/{group}', [SystemSettingsController::class, 'reset'])->name('settings.reset');
             Route::post('settings/branding/logo', [SystemSettingsController::class, 'logo'])->name('settings.logo');
-            Route::resource('users', UserController::class)->except(['show', 'destroy']);
+            Route::resource('users', UserController::class)->except(['destroy']);
             Route::resource('categories', CourseCategoryController::class)->except(['show', 'destroy']);
             Route::resource('courses', AdminCourseController::class)->except(['destroy']);
             Route::delete('courses/{course}', [ArchiveController::class, 'course'])->name('courses.destroy');
@@ -136,6 +137,10 @@ Route::middleware('auth')->group(function () {
         Route::post('student/courses/{course}/lessons/{lesson}/complete', [LessonCompletionController::class, 'store'])->name('student.lessons.complete');
         Route::get('account/sessions', [ActiveSessionController::class, 'index'])->name('sessions.index');
         Route::delete('account/sessions/{token}', [ActiveSessionController::class, 'destroy'])->middleware('throttle:20,1')->name('sessions.destroy');
+        Route::get('account/profile', [ProfileController::class, 'show'])->name('profile.show');
+        Route::put('account/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('account/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+        Route::put('account/profile/password', [ProfileController::class, 'password'])->middleware('throttle:5,1')->name('profile.password');
         Route::middleware('role:ADMIN')->group(function () {
             Route::get('admin/users/{user}/sessions', [ActiveSessionController::class, 'adminIndex'])->name('admin.users.sessions');
             Route::delete('admin/users/{user}/sessions/{token}', [ActiveSessionController::class, 'adminDestroy'])->name('admin.users.sessions.destroy');

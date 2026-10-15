@@ -219,6 +219,14 @@ php artisan db:seed --class=AssignmentDemoSeeder
 
 چک دستی: ساخت و انتشار تکلیف، مشاهده در صفحه درس هنرجو، ارسال متن/فایل، بررسی در صندوق تکالیف، ثبت بازخورد، ارسال مجدد پس از درخواست اصلاح، کنترل دانلود فایل با کاربر دیگر و اجرای دوباره فرمان اعلان را بررسی کنید.
 
+## User profiles and management UX (Phase 15)
+
+Every authenticated role has a Persian RTL `My Profile` page for safe account fields, avatar, password change, and active-session visibility. Mobile remains the normalized login identifier and is Admin-managed; Phase 15 intentionally does not add a self-service mobile or OTP flow. Teacher profiles add plain-text specialty, bio, and experience fields. Students see only a Teacher's name, avatar, specialty, and short bio in Course context.
+
+Admins have a scoped User detail page with account status, safe session descriptors, enrollment/progress summaries from the Phase 13 reporting services, Teacher Course workload, and Assignment/Q&A counts. The User index supports paginated name/email/normalized-Iranian-mobile search, role/status filters, and whitelisted sorting.
+
+Avatar uploads accept MIME-verified PNG/JPEG/WebP images up to 2 MB and 3000×3000, use generated storage names, and delete the previous avatar only after a successful database update. User props are explicit arrays: password hashes, remember tokens, raw session identifiers/payloads, storage paths, and unnecessary private contact fields are not exposed.
+
 ## System settings and branding (Phase 14)
 
 Admins manage product settings at `/admin/settings`. Supported keys are declared in `config/system_settings.php`; the browser cannot create arbitrary keys. `SystemSettings` resolves a validated database override first and otherwise uses the code/config default. Overrides are cached as one map and every update or group reset invalidates that cache immediately.

@@ -107,6 +107,14 @@ Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Larave
 
 `Student -> StudentLessonAccess -> LessonQuestion -> linear LessonQuestionReply -> NotificationEvents -> Teacher/Student notification`. Threads belong to one student and remain private. Assigned course teachers may answer regardless of lesson ownership; an unassigned teacher and other students cannot view the thread. Images use private local storage and an authorized download endpoint.
 
+## User and profile separation (Phase 15)
+
+`users` remains authoritative for identity, authentication, role-independent name, normalized mobile login, email, password, and account status. The one-to-one `user_profiles` table stores only optional LMS presentation fields: avatar path, bio, Teacher specialty, and Teacher experience. There are no separate Student/Teacher identity tables and no unnecessary demographic fields.
+
+Visibility is role-specific. A User receives explicit self-profile props; a Student receives only public Teacher presentation fields inside an authorized Course; Admin detail receives explicit management and operational summaries. Raw models, avatar storage paths, password/remember tokens, raw session IDs, and session payloads never cross the Inertia boundary. Mobile remains an Admin-managed login identifier in Phase 15.
+
+Student detail delegates progress to `LearningReportService`/`LearningProgressService`; it does not create another progress truth. Session summaries and revocation delegate to `ActiveSessionService`. Existing Admin User update logic remains the only role/status/mobile mutation path and retains last-active-Admin protection.
+
 ## System settings boundary (Phase 14)
 
 The resolution path is `config/.env hard maximum or fallback -> SystemSettings definition -> validated system_settings override -> effective domain value`. Definitions own the type, group, default, validation rules, Persian label, description, and bounds. One cached override map prevents a query per key; writes and resets invalidate it immediately.
