@@ -3,11 +3,13 @@
 use App\Http\Controllers\ActiveSessionController;
 use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BulkUserController;
 use App\Http\Controllers\Admin\CourseCategoryController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PurgeController;
+use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AssignmentController;
@@ -61,6 +63,14 @@ Route::middleware('auth')->group(function () {
             Route::delete('settings/{group}', [SystemSettingsController::class, 'reset'])->name('settings.reset');
             Route::post('settings/branding/logo', [SystemSettingsController::class, 'logo'])->name('settings.logo');
             Route::resource('users', UserController::class)->except(['destroy']);
+            Route::get('student-imports/template', [StudentImportController::class, 'template'])->name('student-imports.template');
+            Route::get('student-imports', [StudentImportController::class, 'index'])->name('student-imports.index');
+            Route::post('student-imports', [StudentImportController::class, 'store'])->name('student-imports.store');
+            Route::get('student-imports/{batch}', [StudentImportController::class, 'show'])->name('student-imports.show');
+            Route::post('student-imports/{batch}/execute', [StudentImportController::class, 'execute'])->name('student-imports.execute');
+            Route::get('student-imports/{batch}/errors', [StudentImportController::class, 'errors'])->name('student-imports.errors');
+            Route::post('users/bulk/status', [BulkUserController::class, 'status'])->name('users.bulk.status');
+            Route::post('users/bulk/enroll', [BulkUserController::class, 'enroll'])->name('users.bulk.enroll');
             Route::resource('categories', CourseCategoryController::class)->except(['show', 'destroy']);
             Route::resource('courses', AdminCourseController::class)->except(['destroy']);
             Route::delete('courses/{course}', [ArchiveController::class, 'course'])->name('courses.destroy');

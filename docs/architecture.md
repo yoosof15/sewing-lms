@@ -113,6 +113,12 @@ Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Larave
 
 Visibility is role-specific. A User receives explicit self-profile props; a Student receives only public Teacher presentation fields inside an authorized Course; Admin detail receives explicit management and operational summaries. Raw models, avatar storage paths, password/remember tokens, raw session IDs, and session payloads never cross the Inertia boundary. Mobile remains an Admin-managed login identifier in Phase 15.
 
+## Bulk Student import boundary (Phase 16)
+
+The import pipeline is: temporary spreadsheet → bounded parser → Iranian mobile normalizer → validator/duplicate classifier → persisted preview → explicit Admin confirmation → chunked row transactions → User/Enrollment domain → persisted result. Preview has zero User or Enrollment mutations. Existing mobiles, emails, Courses, and roles are batch-loaded before classification to avoid per-row discovery queries.
+
+CSV/XLSX source files are never copied into public or persistent application storage. Only operational normalized row data and controlled errors are retained. Unknown columns are ignored and cannot be mass-assigned; roles, activation state, creator IDs, and passwords are always decided server-side. Import and result routes are protected by the existing Admin middleware. Plaintext passwords, credentials, secrets, upload binaries, and runtime paths are excluded from result exports and Audit metadata.
+
 Student detail delegates progress to `LearningReportService`/`LearningProgressService`; it does not create another progress truth. Session summaries and revocation delegate to `ActiveSessionService`. Existing Admin User update logic remains the only role/status/mobile mutation path and retains last-active-Admin protection.
 
 ## System settings boundary (Phase 14)

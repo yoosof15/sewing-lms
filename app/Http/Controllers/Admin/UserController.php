@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\AssignmentSubmission;
+use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\LessonQuestion;
 use App\Models\User;
@@ -47,7 +48,7 @@ class UserController extends Controller
             default => $query->latest(),
         };
 
-        return Inertia::render('Admin/Users/Index', ['filters' => $filters, 'users' => $query->paginate(15)->withQueryString()->through(fn (User $u) => [
+        return Inertia::render('Admin/Users/Index', ['filters' => $filters, 'courses' => Course::query()->orderBy('title')->get(['id', 'title']), 'users' => $query->paginate(15)->withQueryString()->through(fn (User $u) => [
             'id' => $u->id, 'name' => $u->name, 'first_name' => $u->first_name, 'last_name' => $u->last_name, 'mobile' => $u->mobile,
             'email' => $u->email, 'is_active' => $u->is_active, 'role' => $u->roles->first()?->name,
             'avatar_url' => $u->profile?->avatar_path ? Storage::disk('public')->url($u->profile->avatar_path) : null,

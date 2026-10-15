@@ -223,6 +223,14 @@ php artisan db:seed --class=AssignmentDemoSeeder
 
 Every authenticated role has a Persian RTL `My Profile` page for safe account fields, avatar, password change, and active-session visibility. Mobile remains the normalized login identifier and is Admin-managed; Phase 15 intentionally does not add a self-service mobile or OTP flow. Teacher profiles add plain-text specialty, bio, and experience fields. Students see only a Teacher's name, avatar, specialty, and short bio in Course context.
 
+## Bulk Student import and User operations (Phase 16)
+
+Admins can preview and explicitly confirm CSV or XLSX Student imports. Required machine headers are `first_name`, `last_name`, and `mobile`; optional headers are `email`, `course_slug`, `enrollment_starts_at`, and `enrollment_ends_at`. Dates use Gregorian `YYYY-MM-DD`. CSV supports UTF-8 and UTF-8 BOM. The generated template is available from the import page.
+
+Iranian mobile numbers are normalized to `+989...`; equivalent numbers and duplicate rows are detected before execution. Imports are limited by `config/student_imports.php` to 10 MB and 5,000 rows. An Admin explicitly chooses either one Course for the file or `course_slug` per row, plus `SKIP_EXISTING` or `ENROLL_EXISTING_ONLY`. Existing names/emails are never overwritten, non-Student roles are never converted, existing Enrollments are not duplicated or reactivated, and error results are downloadable as a UTF-8 BOM CSV.
+
+Preview creates no Users or Enrollments. Confirmation processes bounded chunks with row transactions and a retry-safe batch state. New Students receive a cryptographically random password that is hashed by the User model; plaintext credentials are neither persisted nor exported. Admins use the existing password reset/edit workflow for onboarding. Uploaded source files are parsed from PHP's private temporary upload and are not retained. The User list also provides current-page bulk activation, deactivation, and Student enrollment; Admin deactivation through the bulk endpoint is prohibited.
+
 Admins have a scoped User detail page with account status, safe session descriptors, enrollment/progress summaries from the Phase 13 reporting services, Teacher Course workload, and Assignment/Q&A counts. The User index supports paginated name/email/normalized-Iranian-mobile search, role/status filters, and whitelisted sorting.
 
 Avatar uploads accept MIME-verified PNG/JPEG/WebP images up to 2 MB and 3000×3000, use generated storage names, and delete the previous avatar only after a successful database update. User props are explicit arrays: password hashes, remember tokens, raw session identifiers/payloads, storage paths, and unnecessary private contact fields are not exposed.
