@@ -106,3 +106,11 @@ Domain mutation -> `NotificationEvents` -> queued recipient resolution -> Larave
 ## Private lesson Q&A
 
 `Student -> StudentLessonAccess -> LessonQuestion -> linear LessonQuestionReply -> NotificationEvents -> Teacher/Student notification`. Threads belong to one student and remain private. Assigned course teachers may answer regardless of lesson ownership; an unassigned teacher and other students cannot view the thread. Images use private local storage and an authorized download endpoint.
+
+## Reporting boundaries (Phase 13)
+
+Learning reports are derived, authorized views and do not own learning-progress truth. `LearningProgressService` defines the Course denominator and completion semantics; its batch API loads curriculum, video progress and manual completions in bounded bulk queries. `StudentLessonAccess` remains authoritative for scheduled, prerequisite and sequential locks. Assignment and Q&A aggregates come from their respective domains.
+
+`LearningReportAccess` owns Admin/assigned-Teacher scope. `LearningReportService` owns composable filters, bulk aggregates, last-learning-activity derivation and presentation rows. Controllers only authorize, validate filters and choose HTML or Course-specific CSV output. No percentage is persisted.
+
+The operational Course average uses active Enrollments whose start/end access window includes the current time. Last learning activity is the latest of video heartbeat, manual Lesson completion and Assignment submission; login, notifications, Q&A and administrative edits are intentionally excluded. Exports use the same service, authorization and filters as the page and always mask mobile numbers.

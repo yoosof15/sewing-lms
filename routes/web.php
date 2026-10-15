@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\CourseSectionController;
+use App\Http\Controllers\LearningReportController;
 use App\Http\Controllers\LessonAttachmentController;
 use App\Http\Controllers\LessonCompletionController;
 use App\Http\Controllers\LessonController;
@@ -27,7 +28,6 @@ use App\Http\Controllers\VideoPlaybackController;
 use App\Http\Controllers\VideoProgressController;
 use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::redirect('/', '/login');
 
@@ -49,7 +49,11 @@ Route::middleware('auth')->group(function () {
             return redirect()->route($role.'.dashboard');
         })->name('dashboard');
         Route::prefix('admin')->name('admin.')->middleware('role:ADMIN')->group(function () {
-            Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدیر']))->name('dashboard');
+            Route::get('/', [LearningReportController::class, 'dashboard'])->name('dashboard');
+            Route::get('reports', [LearningReportController::class, 'index'])->name('reports.index');
+            Route::get('reports/courses/{course}', [LearningReportController::class, 'course'])->name('reports.courses.show');
+            Route::get('reports/courses/{course}/export', [LearningReportController::class, 'export'])->name('reports.courses.export');
+            Route::get('reports/students/{student}', [LearningReportController::class, 'student'])->name('reports.students.show');
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::resource('categories', CourseCategoryController::class)->except(['show', 'destroy']);
             Route::resource('courses', AdminCourseController::class)->except(['destroy']);
@@ -84,7 +88,11 @@ Route::middleware('auth')->group(function () {
             Route::post('courses/{course}/lessons/{lesson}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
         });
         Route::prefix('teacher')->name('teacher.')->middleware('role:TEACHER')->group(function () {
-            Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدرس']))->name('dashboard');
+            Route::get('/', [LearningReportController::class, 'dashboard'])->name('dashboard');
+            Route::get('reports', [LearningReportController::class, 'index'])->name('reports.index');
+            Route::get('reports/courses/{course}', [LearningReportController::class, 'course'])->name('reports.courses.show');
+            Route::get('reports/courses/{course}/export', [LearningReportController::class, 'export'])->name('reports.courses.export');
+            Route::get('reports/students/{student}', [LearningReportController::class, 'student'])->name('reports.students.show');
             Route::resource('courses', TeacherCourseController::class)->only(['index', 'show']);
             Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
             Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('lessons.store');

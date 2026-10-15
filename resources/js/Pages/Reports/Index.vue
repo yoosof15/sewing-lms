@@ -1,0 +1,9 @@
+<script setup>
+import {Head,Link,router} from '@inertiajs/vue3'
+import AppLayout from '../../Layouts/AppLayout.vue'
+const p=defineProps({courses:Array,role:String,filters:Object,categories:Array,teachers:Array})
+const search=()=>router.get(`/${p.role.toLowerCase()}/reports`,p.filters,{preserveState:true,replace:true})
+</script>
+<template><AppLayout><Head title="گزارش آموزشی"/><section class="rounded-2xl border bg-white p-5"><h1 class="text-2xl font-bold">گزارش آموزشی</h1><p class="mt-2 text-slate-500">پیشرفت هنرجویان بر پایه داده‌های واقعی یادگیری محاسبه می‌شود.</p>
+<form class="mt-5 grid gap-3 md:grid-cols-3" @submit.prevent="search"><input v-model="filters.course" placeholder="نام دوره"><input v-model="filters.student" placeholder="نام هنرجو"><select v-model="filters.enrollment_status"><option value="">همه ثبت‌نام‌ها</option><option value="ACTIVE">فعال</option><option value="INACTIVE">غیرفعال</option></select><template v-if="role==='ADMIN'"><select v-model="filters.category_id"><option value="">همه دسته‌ها</option><option v-for="c in categories" :value="c.id">{{c.name}}</option></select><select v-model="filters.teacher_id"><option value="">همه مدرس‌ها</option><option v-for="t in teachers" :value="t.id">{{t.first_name}} {{t.last_name}}</option></select></template><button class="rounded-xl bg-teal-700 px-4 py-2 text-white">اعمال فیلتر</button></form>
+<div class="mt-6 grid gap-4 md:grid-cols-2"><Link v-for="course in courses" :key="course.id" :href="`/${role.toLowerCase()}/reports/courses/${course.id}`" class="rounded-xl border p-4 hover:border-teal-600"><strong>{{course.title}}</strong><p class="mt-2 text-sm">ثبت‌نام فعال: {{course.active_enrollments_count}} از {{course.enrollments_count}}</p><p class="text-sm text-slate-500">{{course.category?.name||'بدون دسته‌بندی'}}</p></Link></div><p v-if="!courses.length" class="mt-6 rounded-xl bg-slate-50 p-4">دوره‌ای مطابق فیلترها وجود ندارد.</p></section></AppLayout></template>

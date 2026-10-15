@@ -90,4 +90,44 @@ class LearningProgressService
     {
         return $this->courses($student, collect([$course]))[$course->id];
     }
+
+    /**
+     * Calculate one Course for many Students with a fixed number of bulk queries.
+     * This is the reporting counterpart of course() and preserves its denominator.
+     */
+    public function courseStudents(Course $course, Collection $students): array
+    {
+        $students = $students->unique('id')->values();
+        if ($students->isEmpty()) {
+            return [];
+        }
+
+        $lessons = Lesson::query()->leftJoin('course_sections', 'course_sections.id', '=', 'lessons.section_id')
+            ->where('lessons.course_id', $course->id)->where('lessons.status', LessonStatus::Published->value)
+            ->where(fn ($query) => $query->whereNull('lessons.available_at')->orWhere('lessons.available_at', '<=', now()))
+            ->whereNull('course_sections.deleted_at')->get(['lessons.id', 'lessons.course_id']);
+        $videos = LessonVideo::query()->whereIn('lesson_id', $lessons->pluck('id'))->where('status', VideoStatus::Ready->value)
+            ->where('publication_status', VideoPublicationStatus::Published->value)->get(['id', 'lesson_id', 'processed_storage_key'])
+            ->filter(fn (LessonVideo $video) => $video->processed_storage_key && $this->storage->exists($video->processed_storage_key));
+        $progress = VideoProgress::query()->whereIn('user_id', $students->pluck('id'))->whereIn('lesson_video_id', $videos->pluck('id'))
+            ->get(['user_id', 'lesson_video_id', 'watched_seconds', 'completed_at'])->groupBy('user_id');
+        $manual = LessonManualCompletion::query()->whereIn('user_id', $students->pluck('id'))->whereIn('lesson_id', $lessons->pluck('id'))
+            ->get(['user_id', 'lesson_id'])->groupBy('user_id');
+
+        return $students->mapWithKeys(function (User $student) use ($lessons, $videos, $progress, $manual) {
+            $studentProgress = $progress->get($student->id, collect())->keyBy('lesson_video_id');
+            $manualLessonIds = $manual->get($student->id, collect())->pluck('lesson_id')->flip();
+            $states = $lessons->mapWithKeys(function ($lesson) use ($videos, $studentProgress, $manualLessonIds) {
+                $ids = $videos->where('lesson_id', $lesson->id)->pluck('id');
+                $completed = $ids->isEmpty() ? $manualLessonIds->has($lesson->id) : $ids->every(fn ($id) => $studentProgress->get($id)?->completed_at !== null);
+                $started = $ids->contains(fn ($id) => ($studentProgress->get($id)?->watched_seconds ?? 0) > 0);
+
+                return [$lesson->id => $completed ? 'completed' : ($started ? 'in_progress' : 'not_started')];
+            });
+            $completed = $states->filter(fn ($state) => $state === 'completed')->count();
+            $total = $lessons->count();
+
+            return [$student->id => ['percent' => $total ? (int) round($completed / $total * 100) : 0, 'completed_lessons' => $completed, 'total_lessons' => $total, 'lessons' => $states->all()]];
+        })->all();
+    }
 }

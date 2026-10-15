@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LessonManualCompletion extends Model
 {
@@ -11,5 +12,10 @@ class LessonManualCompletion extends Model
     protected function casts(): array
     {
         return ['completed_at' => 'datetime'];
+    }
+
+    public function lesson(): BelongsTo
+    {
+        return $this->belongsTo(Lesson::class);
     }
 }
