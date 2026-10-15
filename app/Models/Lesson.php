@@ -74,4 +74,9 @@ class Lesson extends Model
     {
         return $this->hasMany(LessonQuestion::class);
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(LessonAssignment::class);
+    }
 }

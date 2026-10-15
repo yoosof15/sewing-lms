@@ -55,6 +55,7 @@ class LessonController extends Controller
 
         $lesson->setRelation('attachments', $lesson->attachments()->withTrashed()->get());
         $lesson->setRelation('videos', $lesson->videos()->withTrashed()->with('uploader:id,first_name,last_name')->orderBy('sort_order')->get());
+        $lesson->setRelation('assignments', $lesson->assignments()->withTrashed()->orderBy('created_at')->get());
 
         return Inertia::render('Lessons/Form', array_merge($this->formData($course, $lesson), ['videoConfig' => ['maxBytes' => (int) config('video.max_upload_mb') * 1024 * 1024, 'processingEnabled' => ! in_array(config('video.processor_driver'), [null, 'null'], true), 'maxAttempts' => (int) config('video.processing_max_attempts')]]));
     }

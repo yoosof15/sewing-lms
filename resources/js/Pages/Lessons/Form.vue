@@ -2,6 +2,7 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import VideoUploader from '../../Components/VideoUploader.vue';
+import AssignmentManager from '../../Components/AssignmentManager.vue';
 
 const props = defineProps({ course: Object, lesson: Object, statuses: Array, videoConfig: Object, prerequisiteCandidates: Array });
 const role = usePage().props.auth.user.role.toLowerCase();
@@ -32,6 +33,7 @@ const duration = (seconds) => seconds == null ? '—' : `${Math.floor(seconds / 
                     <div class="flex gap-3"><button :disabled="form.processing" class="rounded-xl bg-teal-700 px-5 py-2.5 text-white disabled:opacity-50">{{ form.processing ? 'در حال ذخیره…' : 'ذخیره' }}</button><Link :href="`/${role}/courses/${course.id}`" class="rounded-xl border px-5 py-2.5">بازگشت</Link></div>
                 </form>
             </section>
+            <AssignmentManager v-if="editing" :course="course" :lesson="lesson" :role="role" />
             <section v-if="editing" class="rounded-2xl border bg-white p-6">
                 <h2 class="mb-4 font-bold">ویدئوها</h2>
                 <VideoUploader :lesson-id="lesson.id" :max-bytes="videoConfig.maxBytes" />

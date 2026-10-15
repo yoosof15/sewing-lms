@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\NotificationCategory;
 use App\Jobs\DispatchInAppNotification;
+use App\Models\AssignmentSubmission;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonAssignment;
 use App\Models\LessonQuestion;
 use App\Models\LessonQuestionReply;
 use App\Models\LessonVideo;
@@ -50,6 +52,22 @@ class NotificationEvents
         } else {
             $question->lesson->course->teachers()->where('is_active', true)->get()->each(fn (User $teacher) => $this->user("qa:reply:{$reply->id}:teacher", $teacher, NotificationCategory::LessonQa, ['title' => 'پیگیری پرسش', 'message' => "هنرجو در پرسش درس «{$question->lesson->title}» پیام جدیدی ثبت کرد.", 'action_url' => route('questions.show', $question), 'entity_type' => 'lesson_question', 'entity_id' => $question->id]));
         }
+    }
+
+    public function assignmentPublished(LessonAssignment $assignment): void
+    {
+        $this->course("assignment:{$assignment->id}:available", $assignment->lesson->course, NotificationCategory::Assignment, ['title' => 'تکلیف جدید', 'message' => "تکلیف «{$assignment->title}» برای درس «{$assignment->lesson->title}» منتشر شد.", 'action_url' => route('student.assignments.show', $assignment), 'entity_type' => 'assignment', 'entity_id' => $assignment->id, 'lesson_id' => $assignment->lesson_id]);
+    }
+
+    public function submissionReceived(AssignmentSubmission $submission): void
+    {
+        $a = $submission->assignment;
+        $a->lesson->course->teachers()->where('is_active', true)->get()->each(fn (User $teacher) => $this->user("submission:{$submission->id}:teacher", $teacher, NotificationCategory::Assignment, ['title' => 'ارسال تکلیف', 'message' => "{$submission->student->name} تکلیف «{$a->title}» را ارسال کرد.", 'action_url' => route('submissions.show', $submission), 'entity_type' => 'assignment_submission', 'entity_id' => $submission->id]));
+    }
+
+    public function submissionReviewed(AssignmentSubmission $submission): void
+    {
+        $this->user("submission:{$submission->id}:review:{$submission->status->value}", $submission->student, NotificationCategory::Assignment, ['title' => 'نتیجه بررسی تکلیف', 'message' => "وضعیت تکلیف «{$submission->assignment->title}» به‌روزرسانی شد.", 'action_url' => route('submissions.show', $submission), 'entity_type' => 'assignment_submission', 'entity_id' => $submission->id]);
     }
 
     private function user(string $key, User $user, NotificationCategory $category, array $payload): void

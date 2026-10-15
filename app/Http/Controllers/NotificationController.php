@@ -36,7 +36,7 @@ class NotificationController extends Controller
 
     public function preference(Request $request): RedirectResponse
     {
-        $data = $request->validate(['category' => ['required', 'in:NEW_LESSON,NEW_VIDEO,LESSON_QA'], 'enabled' => ['required', 'boolean']]);
+        $data = $request->validate(['category' => ['required', 'in:NEW_LESSON,NEW_VIDEO,LESSON_QA,ASSIGNMENT'], 'enabled' => ['required', 'boolean']]);
         NotificationPreference::updateOrCreate(['user_id' => $request->user()->id, 'category' => $data['category']], ['enabled' => $data['enabled']]);
 
         return back();

@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\OperationsController;
 use App\Http\Controllers\Admin\PurgeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AssignmentSubmissionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -78,6 +80,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
             Route::post('courses/{course}/sections/{section}/restore', [CourseSectionController::class, 'restore'])->name('sections.restore');
             Route::get('questions', [LessonQuestionController::class, 'index'])->name('questions.index');
+            Route::get('submissions', [AssignmentSubmissionController::class, 'index'])->name('submissions.index');
+            Route::post('courses/{course}/lessons/{lesson}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
         });
         Route::prefix('teacher')->name('teacher.')->middleware('role:TEACHER')->group(function () {
             Route::get('/', fn () => Inertia::render('Dashboard', ['title' => 'داشبورد مدرس']))->name('dashboard');
@@ -93,6 +97,8 @@ Route::middleware('auth')->group(function () {
             Route::post('courses/{course}/sections/{section}/move/{direction}', [CourseSectionController::class, 'move'])->name('sections.move');
             Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('sections.destroy');
             Route::get('questions', [LessonQuestionController::class, 'index'])->name('questions.index');
+            Route::get('submissions', [AssignmentSubmissionController::class, 'index'])->name('submissions.index');
+            Route::post('courses/{course}/lessons/{lesson}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
         });
         Route::prefix('student')->name('student.')->middleware('role:STUDENT')->group(function () {
             Route::get('/', [StudentCourseController::class, 'index'])->name('dashboard');
@@ -128,6 +134,14 @@ Route::middleware('auth')->group(function () {
         Route::patch('questions/{question}/status', [LessonQuestionController::class, 'status'])->name('questions.status');
         Route::delete('questions/{question}', [LessonQuestionController::class, 'destroy'])->middleware('role:ADMIN')->name('questions.destroy');
         Route::get('question-attachments/{attachment}', [LessonQuestionController::class, 'download'])->name('questions.attachments.download');
+        Route::put('assignments/{a}', [AssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('assignments/{a}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('admin/assignments/{assignment}/restore', [AssignmentController::class, 'restore'])->middleware('role:ADMIN')->name('assignments.restore');
+        Route::post('assignments/{a}/submissions', [AssignmentSubmissionController::class, 'store'])->middleware('throttle:10,1')->name('submissions.store');
+        Route::get('student/assignments/{a}', [AssignmentSubmissionController::class, 'assignment'])->name('student.assignments.show');
+        Route::get('submissions/{s}', [AssignmentSubmissionController::class, 'show'])->name('submissions.show');
+        Route::patch('submissions/{s}/review', [AssignmentSubmissionController::class, 'review'])->middleware('throttle:20,1')->name('submissions.review');
+        Route::get('submission-files/{f}', [AssignmentSubmissionController::class, 'download'])->name('submission-files.download');
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');

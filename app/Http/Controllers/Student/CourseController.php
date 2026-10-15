@@ -52,6 +52,7 @@ class CourseController extends Controller
         $this->authorize('view', $lesson);
         $lesson->load('attachments');
         $lesson->setRelation('questions', $lesson->questions()->where('student_id', request()->user()->id)->latest('last_activity_at')->limit(20)->get());
+        $lesson->setRelation('assignments', $lesson->assignments()->where('status', 'PUBLISHED')->where(fn ($q) => $q->whereNull('available_at')->orWhere('available_at', '<=', now()))->with(['submissions' => fn ($q) => $q->where('student_id', request()->user()->id)->with('files')->orderBy('attempt_number')])->get());
         $visibleVideos = $lesson->videos()
             ->where('status', VideoStatus::Ready->value)
             ->where('publication_status', VideoPublicationStatus::Published->value)

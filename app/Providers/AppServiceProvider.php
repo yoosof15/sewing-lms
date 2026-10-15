@@ -5,9 +5,16 @@ namespace App\Providers;
 use App\Contracts\VideoDelivery;
 use App\Contracts\VideoProcessor;
 use App\Contracts\VideoStorage;
+use App\Models\AssignmentSubmission;
+use App\Models\LessonAssignment;
+use App\Models\SubmissionFile;
+use App\Policies\AssignmentSubmissionPolicy;
+use App\Policies\LessonAssignmentPolicy;
+use App\Policies\SubmissionFilePolicy;
 use App\Services\LocalFFmpegVideoProcessor;
 use App\Services\LocalProtectedVideoDelivery;
 use App\Services\LocalVideoStorage;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -40,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(LessonAssignment::class, LessonAssignmentPolicy::class);
+        Gate::policy(AssignmentSubmission::class, AssignmentSubmissionPolicy::class);
+        Gate::policy(SubmissionFile::class, SubmissionFilePolicy::class);
     }
 }
