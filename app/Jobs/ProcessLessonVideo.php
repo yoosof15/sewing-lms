@@ -34,6 +34,7 @@ class ProcessLessonVideo implements ShouldBeUnique, ShouldQueue
     public function __construct(public int $videoId)
     {
         $this->timeout = (int) config('video.processing_timeout');
+        $this->onQueue((string) config('video.processing_queue', 'video'));
     }
 
     public function uniqueId(): string

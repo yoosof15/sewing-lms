@@ -6,6 +6,7 @@ return [
     'chunk_mb' => (int) env('VIDEO_UPLOAD_CHUNK_MB', 5),
     'session_ttl_hours' => (int) env('VIDEO_UPLOAD_SESSION_TTL_HOURS', 24),
     'processor_driver' => env('VIDEO_PROCESSOR_DRIVER', 'ffmpeg'),
+    'processing_queue' => env('VIDEO_PROCESSING_QUEUE', 'video'),
     'ffmpeg_binary' => env('FFMPEG_BINARY', 'ffmpeg'),
     'ffprobe_binary' => env('FFPROBE_BINARY', 'ffprobe'),
     'target_max_width' => (int) env('VIDEO_TARGET_MAX_WIDTH', 1920),

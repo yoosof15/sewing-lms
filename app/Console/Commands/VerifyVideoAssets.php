@@ -17,8 +17,10 @@ class VerifyVideoAssets extends Command
     public function handle(VideoStorage $storage): int
     {
         $problems = 0;
-        LessonVideo::withTrashed()->orderBy('id')->chunkById(100, function ($videos) use ($storage, &$problems) {
+        $checked = 0;
+        LessonVideo::withTrashed()->orderBy('id')->chunkById(100, function ($videos) use ($storage, &$problems, &$checked) {
             foreach ($videos as $video) {
+                $checked++;
                 if ($video->storage_key && ! $storage->exists($video->storage_key) && ! $video->source_deleted_at) {
                     $this->warn("Video {$video->id}: source asset is missing.");
                     $problems++;
@@ -37,8 +39,8 @@ class VerifyVideoAssets extends Command
             $this->warn("Upload {$session->public_id}: stale session requires cleanup review.");
             $problems++;
         });
-        $this->info($problems ? "Verification completed with {$problems} finding(s); nothing was changed." : 'Verification completed: no obvious asset problems found.');
+        $this->info($problems ? "FAIL: checked {$checked} video(s); {$problems} finding(s); nothing was changed." : "PASS: checked {$checked} video(s); no obvious asset problems found.");
 
-        return self::SUCCESS;
+        return $problems ? self::FAILURE : self::SUCCESS;
     }
 }

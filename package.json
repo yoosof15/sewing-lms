@@ -6,6 +6,7 @@
         "build": "vite build",
         "dev": "vite",
         "test:e2e": "node tests/e2e/run.mjs",
+        "test:e2e:smoke": "node tests/e2e/run.mjs --grep @smoke",
         "test:e2e:headed": "node tests/e2e/run.mjs --headed"
     },
     "devDependencies": {

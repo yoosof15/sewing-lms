@@ -237,6 +237,10 @@ The repository uses Playwright with Chromium for isolated browser tests. Run `np
 
 User-facing timestamps remain Gregorian-backed and are displayed through the shared Persian `Intl.DateTimeFormat` formatter in the `Asia/Tehran` timezone. Phase 17 does not add a Jalali dependency. Destructive confirmations use the accessible project dialog, important forms expose pending states, and navigation remains keyboard- and mobile-usable.
 
+## Production readiness (Phase 18)
+
+Run `php artisan app:preflight` for a read-only local readiness check and `php artisan app:preflight --production` before a production release. Safe operational helpers include `app:smoke`, `admin:create`, `sessions:prune`, `storage:estimate`, `php scripts/backup-rehearsal.php`, and the tagged browser smoke suite `npm.cmd run test:e2e:smoke`. The cPanel deployment, backup, queue, scheduler, rollback, retention, and monitoring procedures are in `docs/production-deployment-runbook.md`; the remaining production blockers are explicit in `docs/production-readiness-report.md`.
+
 Admins have a scoped User detail page with account status, safe session descriptors, enrollment/progress summaries from the Phase 13 reporting services, Teacher Course workload, and Assignment/Q&A counts. The User index supports paginated name/email/normalized-Iranian-mobile search, role/status filters, and whitelisted sorting.
 
 Avatar uploads accept MIME-verified PNG/JPEG/WebP images up to 2 MB and 3000×3000, use generated storage names, and delete the previous avatar only after a successful database update. User props are explicit arrays: password hashes, remember tokens, raw session identifiers/payloads, storage paths, and unnecessary private contact fields are not exposed.

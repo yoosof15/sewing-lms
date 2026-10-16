@@ -54,3 +54,6 @@ Artisan::command('notifications:dispatch-due', function (NotificationEvents $eve
 })->purpose('Queue idempotent notifications for due scheduled lessons');
 
 Schedule::command('notifications:dispatch-due')->everyMinute()->withoutOverlapping();
+Schedule::command('video:cleanup-uploads')->hourly()->withoutOverlapping();
+Schedule::command('sessions:prune')->dailyAt('03:20')->withoutOverlapping();
+Schedule::command('video:verify-assets')->dailyAt('04:00')->withoutOverlapping();
