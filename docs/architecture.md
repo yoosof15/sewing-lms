@@ -119,6 +119,12 @@ The import pipeline is: temporary spreadsheet → bounded parser → Iranian mob
 
 CSV/XLSX source files are never copied into public or persistent application storage. Only operational normalized row data and controlled errors are retained. Unknown columns are ignored and cannot be mass-assigned; roles, activation state, creator IDs, and passwords are always decided server-side. Import and result routes are protected by the existing Admin middleware. Plaintext passwords, credentials, secrets, upload binaries, and runtime paths are excluded from result exports and Audit metadata.
 
+## UX and browser-test conventions (Phase 17)
+
+Mutation feedback is delivered through centralized Inertia `success`, `warning`, and `error` flash regions. Confirmations use the focusable native-dialog wrapper; typed `PURGE` protection remains mandatory. Persian labels accompany status color, large tables scroll horizontally, and the primary navigation collapses on small screens. Dates remain Gregorian in storage and use the shared Persian formatter with the `Asia/Tehran` timezone.
+
+Browser E2E is isolated from developer data: a Node runner creates an ignored SQLite database, migrates it, invokes the environment-guarded deterministic seeder, and starts a local Laravel server. Tests monitor browser errors and cover role authorization, Admin import/User flows, Teacher Q&A/review, Student curriculum/assignment/profile/notifications, and three responsive viewports.
+
 Student detail delegates progress to `LearningReportService`/`LearningProgressService`; it does not create another progress truth. Session summaries and revocation delegate to `ActiveSessionService`. Existing Admin User update logic remains the only role/status/mobile mutation path and retains last-active-Admin protection.
 
 ## System settings boundary (Phase 14)

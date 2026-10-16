@@ -231,6 +231,12 @@ Iranian mobile numbers are normalized to `+989...`; equivalent numbers and dupli
 
 Preview creates no Users or Enrollments. Confirmation processes bounded chunks with row transactions and a retry-safe batch state. New Students receive a cryptographically random password that is hashed by the User model; plaintext credentials are neither persisted nor exported. Admins use the existing password reset/edit workflow for onboarding. Uploaded source files are parsed from PHP's private temporary upload and are not retained. The User list also provides current-page bulk activation, deactivation, and Student enrollment; Admin deactivation through the bulk endpoint is prohibited.
 
+## Browser E2E and UX hardening (Phase 17)
+
+The repository uses Playwright with Chromium for isolated browser tests. Run `npm.cmd run test:e2e` on Windows after `npx.cmd playwright install chromium`; headed debugging is available through `npm.cmd run test:e2e:headed`. The runner recreates only `storage/framework/testing/e2e.sqlite`, migrates it, and runs `E2eDemoSeeder`; it never touches the configured development or production database. Failure screenshots and traces are written to ignored `test-results/` and `playwright-report/` directories.
+
+User-facing timestamps remain Gregorian-backed and are displayed through the shared Persian `Intl.DateTimeFormat` formatter in the `Asia/Tehran` timezone. Phase 17 does not add a Jalali dependency. Destructive confirmations use the accessible project dialog, important forms expose pending states, and navigation remains keyboard- and mobile-usable.
+
 Admins have a scoped User detail page with account status, safe session descriptors, enrollment/progress summaries from the Phase 13 reporting services, Teacher Course workload, and Assignment/Q&A counts. The User index supports paginated name/email/normalized-Iranian-mobile search, role/status filters, and whitelisted sorting.
 
 Avatar uploads accept MIME-verified PNG/JPEG/WebP images up to 2 MB and 3000×3000, use generated storage names, and delete the previous avatar only after a successful database update. User props are explicit arrays: password hashes, remember tokens, raw session identifiers/payloads, storage paths, and unnecessary private contact fields are not exposed.

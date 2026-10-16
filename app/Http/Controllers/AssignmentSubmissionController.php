@@ -88,7 +88,7 @@ class AssignmentSubmissionController extends Controller
             $events->submissionReviewed($s->load('student', 'assignment'));
         }
 
-        return back();
+        return back()->with('success', 'نتیجه بررسی تکلیف ذخیره شد.');
     }
 
     public function download(SubmissionFile $f): StreamedResponse

@@ -1,0 +1,3 @@
+import { test, expect } from '@playwright/test'
+import { login } from './helpers.js'
+for(const viewport of [{width:375,height:812},{width:768,height:1024},{width:1440,height:900}])test(`navigation and key screens fit ${viewport.width}x${viewport.height}`,async({page})=>{await page.setViewportSize(viewport);await login(page,'student@example.test');if(viewport.width<768){await expect(page.getByRole('button',{name:'فهرست'})).toBeVisible();await page.getByRole('button',{name:'فهرست'}).click();await expect(page.getByRole('navigation')).toBeVisible()}await page.goto('/student/courses');const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+1);expect(overflow).toBeFalsy()})
